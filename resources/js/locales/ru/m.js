@@ -2,6 +2,7 @@ export default {
     main: 'Показать в главном окне',
     mainCategory: 'Основная категория',
     mainCurrency: 'Основная валюта',
+    mainSlide: 'Главный слайд',
     marketplace: 'Маркетплейс',
     marketCompanyTypeEntrepreneur: 'ИП',
     marketCompanyTypeIndividual: 'Физ. лицо',
@@ -39,6 +40,8 @@ export default {
     marketShops: 'Магазины',
     marketStorefronts: 'Витрины',
     marketTags: 'Теги товаров',
+    maximumImagesDesc: 'Максимум 30 изображений, до 10 МБ каждое.\n' +
+        'Подписи уже сохранённых изображений не редактируются.',
     maxFileSizeKb: 'Макс.размер файла',
     maxNumberFiles: 'Максимум файлов',
     maxNumberFilesText: 'Достигнуто максимальное количество файлов.',
@@ -72,6 +75,8 @@ export default {
     modules: 'Модули обучения',
     months: 'месяцев',
     more: 'Ещё',
+    moveLeft: 'Переместить влево',
+    moveRight: 'Переместить вправо',
     multiselect: 'Множественный список',
     my: 'Моё',
 }

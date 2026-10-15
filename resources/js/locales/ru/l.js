@@ -5,6 +5,7 @@ export default {
     lastViewedAt: 'Последний просмотр',
     lastUpdate: 'Последнее обновление',
     lastUsed: 'Последнее использование',
+    latencyMs: 'Задержка, мс',
     latestNews: 'Последние новости',
     latitude: 'Широта',
     learningCategories: 'Категории обучения',

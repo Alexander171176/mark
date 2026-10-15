@@ -24,6 +24,12 @@ const { t } = useI18n();
             :active="route().current('admin.cmsPages.*')">
             {{ t('pages') }}
         </ResponsiveNavLink>
+        <!-- Админские маршруты Конструктора Слайдеров -->
+        <ResponsiveNavLink
+            :href="route('admin.sliders.index')"
+            :active="route().current('admin.sliders.*')">
+            {{ t('sliders') }}
+        </ResponsiveNavLink>
         <!-- Админские маршруты Уведомлений -->
         <ResponsiveNavLink
             :href="route('admin.notifications.index')"

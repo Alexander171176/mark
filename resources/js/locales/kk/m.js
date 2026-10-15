@@ -2,6 +2,7 @@ export default {
     main: 'Негізгі терезеде көрсету',
     mainCategory: 'Негізгі санат',
     mainCurrency: 'Негізгі валюта',
+    mainSlide: 'Негізгі слайд',
     marketplace: 'Базар',
     marketCompanyTypeEntrepreneur: 'ЖС',
     marketCompanyTypeIndividual: 'Жеке',
@@ -39,6 +40,8 @@ export default {
     marketShops: 'Дүкендер',
     marketStorefronts: 'Көрме витриналары',
     marketTags: 'Өнім тегтері',
+    maximumImagesDesc: 'Ең көбі 30 сурет, әрқайсысы 10 МБ дейін. \n' +
+        'Бұрыннан сақталған кескіндердің субтитрлерін өңдеу мүмкін емес.',
     maxFileSizeKb: 'Файлдың макс. өлшемі',
     maxNumberFiles: 'Файлдардың максималды саны',
     maxNumberFilesText: 'Файлдардың ең көп санына жетті.',
@@ -72,6 +75,8 @@ export default {
     modules: 'Оқыту модульдері',
     months: 'айлар',
     more: 'Көбірек',
+    moveLeft: 'Солға жылжытыңыз',
+    moveRight: 'Оңға жылжытыңыз',
     multiselect: 'Бірнеше тізім',
     my: 'Менің',
 }

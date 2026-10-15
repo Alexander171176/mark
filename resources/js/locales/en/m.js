@@ -2,6 +2,7 @@ export default {
     main: 'Show in the main window',
     mainCategory: 'Main category',
     mainCurrency: 'Main currency',
+    mainSlide: 'Main slide',
     marketplace: 'Marketplace',
     marketCompanyTypeEntrepreneur: 'Individual entrepreneur',
     marketCompanyTypeIndividual: 'Individual',
@@ -39,6 +40,8 @@ export default {
     marketShops: 'Shops',
     marketStorefronts: 'Showcases',
     marketTags: 'Product tags',
+    maximumImagesDesc: 'Maximum of 30 images, up to 10 MB each. \n' +
+        'Captions of already saved images cannot be edited.',
     maxFileSizeKb: 'Max file size',
     maxNumberFiles: 'Maximum number of files',
     maxNumberFilesText: 'Maximum number of files reached.',
@@ -72,6 +75,8 @@ export default {
     modules: 'Training modules',
     months: 'months',
     more: 'More',
+    moveLeft: 'Move to the left',
+    moveRight: 'Move to the right',
     multiselect: 'Multiple list',
     my: 'My',
 }

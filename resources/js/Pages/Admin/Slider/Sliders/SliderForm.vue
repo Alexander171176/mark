@@ -225,16 +225,17 @@ const submit = () => {
     }
 }
 
-const fieldClass = 'w-full rounded border border-slate-300 dark:border-slate-500 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100'
+const fieldClass = 'w-full rounded border border-slate-400 dark:border-slate-500 ' +
+    'bg-white dark:bg-slate-900 px-3 py-1 text-sm text-slate-800 dark:text-slate-100'
 const error = key => form.errors[key] || ''
 </script>
 
 <template>
     <AdminLayout
-        :title="editing ? 'Редактирование слайдера' : 'Создание слайдера'">
+        :title="editing ? t('editSlider') : t('addSlider')">
         <template #header>
             <TitlePage>
-                {{ editing ? 'Редактирование слайдера' : 'Создание слайдера' }}
+                {{ editing ? t('editSlider') : t('addSlider') }}
             </TitlePage>
         </template>
         <div
@@ -249,7 +250,7 @@ const error = key => form.errors[key] || ''
 
                 <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
                     <a :href="route('admin.sliders.index')"
-                       class="flex items-center btn px-2 py-0.5 rounded-sm shadow-md
+                       class="flex items-center btn px-3 py-1 rounded shadow-md
                              bg-sky-600 text-white text-sm font-semibold
                              transition-colors duration-300 ease-in-out
                              hover:bg-sky-700 focus:bg-sky-700 focus:outline-none">
@@ -269,209 +270,260 @@ const error = key => form.errors[key] || ''
                         :available-locales="availableLocales"
                         :storage-key="`pulsarcms.slider.builder.${record.id ?? 'create'}`"
                     />
-                    <details
-                        :open="sections.main"
-                        @toggle="toggleSection('main', $event)"
+                    <section
                         class="rounded border border-slate-300 bg-white p-4 shadow-sm
+                               dark:border-slate-600 dark:bg-slate-800 space-y-5">
+                        <details
+                            :open="sections.main"
+                            @toggle="toggleSection('main', $event)"
+                            class="rounded border border-slate-400 bg-white p-3 shadow-sm
                                dark:border-slate-600 dark:bg-slate-800"
-                    >
-                        <summary
-                            class="flex cursor-pointer select-none
-                                   items-center justify-between gap-3 font-bold text-lg">
-                            Основные параметры
-                            <span class="text-sm text-slate-500">▾</span>
-                        </summary>
-                        <div class="mt-4 grid gap-4 md:grid-cols-3">
-                            <label class="space-y-1 text-sm">
-                                Код слайдера *
-                                <input
-                                    v-model="form.code"
-                                    :class="fieldClass" maxlength="150"
-                                    required
-                                    placeholder="home-hero" />
-                                <span
-                                class="text-red-500">
+                        >
+                            <summary
+                                class="cursor-pointer select-none font-semibold text-md">
+                            <span class="text-slate-900 dark:text-slate-100 tracking-wide">
+                                {{ t('keyParameters') }}
+                            </span>
+                            </summary>
+                            <div class="mt-2 flex flex-col xs:flex-row
+                                    items-center justify-between">
+                                <label class="flex items-center gap-2 text-sm">
+                                    <input
+                                        v-model="form.activity"
+                                        type="checkbox" />
+                                    <span class="font-semibold text-blue-700 dark:text-blue-300 mr-1">
+                                    {{ t('activity') }}
+                                </span>
+                                </label>
+                                <label class="space-y-1 text-sm">
+                                <span class="font-semibold text-blue-700 dark:text-blue-300 mr-2">
+                                    {{ t('sort') }}
+                                </span>
+                                    <input
+                                        class="max-w-20"
+                                        v-model.number="form.sort"
+                                        type="number"
+                                        min="0"
+                                        :class="fieldClass" />
+                                </label>
+                            </div>
+                            <div class="mt-2 grid gap-4 md:grid-cols-3">
+                                <label class="space-y-1 text-sm">
+                                <span class="font-semibold text-blue-700 dark:text-blue-300">
+                                    {{ t('code') }} *
+                                </span>
+                                    <input
+                                        v-model="form.code"
+                                        :class="fieldClass" maxlength="150"
+                                        required
+                                        placeholder="home-hero" />
+                                    <span
+                                        class="text-red-500">
                                     {{ error('code') }}
                                 </span>
-                            </label>
-                            <label class="space-y-1 text-sm">
-                                Тип *
-                                <select
-                                    v-model="form.type"
-                                    :class="fieldClass">
-                                <option value="hero">
-                                    Hero
-                                </option>
-                                <option value="banner">
-                                    Banner
-                                </option>
-                                <option value="carousel">
-                                    Carousel
-                                </option>
-                            </select>
-                                <span class="text-red-500">
+                                </label>
+                                <label class="space-y-1 text-sm">
+                                <span class="font-semibold text-blue-700 dark:text-blue-300">
+                                    {{ t('type') }} *
+                                </span>
+                                    <select
+                                        v-model="form.type"
+                                        :class="fieldClass">
+                                        <option value="hero">
+                                            Hero
+                                        </option>
+                                        <option value="banner">
+                                            {{ t('banner') }}
+                                        </option>
+                                        <option value="carousel">
+                                            {{ t('carousel') }}
+                                        </option>
+                                    </select>
+                                    <span class="text-red-500">
                                     {{ error('type') }}
                                 </span>
-                            </label>
-                            <label class="space-y-1 text-sm">
-                                Публикация *
-                                <select
-                                    v-model="form.status"
-                                    :class="fieldClass">
-                                <option value="draft">
-                                    Черновик
-                                </option>
-                                <option value="published">
-                                    Опубликован
-                                </option>
-                                <option value="archived">
-                                    Архив
-                                </option>
-                            </select>
-                            </label>
-                            <label class="space-y-1 text-sm">
-                                Сортировка
-                                <input
-                                    v-model.number="form.sort"
-                                    type="number"
-                                    min="0"
-                                    :class="fieldClass" />
-                            </label>
-                            <label class="flex items-center gap-2 text-sm">
-                                <input
-                                    v-model="form.activity"
-                                    type="checkbox" />
-                                Активен
-                            </label>
-                        </div>
-                    </details>
-                    <details
-                        :open="sections.translations"
-                        @toggle="toggleSection('translations', $event)"
-                        class="rounded border border-slate-300 bg-white p-4 shadow-sm
-                               dark:border-slate-600 dark:bg-slate-800"
-                    >
-                        <summary
-                            class="flex cursor-pointer select-none
-                                   items-center justify-between gap-3 font-bold text-lg">
-                            Переводы слайдера
-                            <span class="text-sm text-slate-500">▾</span>
-                        </summary>
-                        <TranslationTabs
-                            v-model="activeLocale"
-                            :translations="form.translations"
-                            :available-locales="availableLocales"
-                            :make-translation="makeTranslation"
-                            @update:translations="form.translations = $event"
-                        />
-                        <div class="mt-4 grid gap-4 md:grid-cols-2">
-                            <label class="space-y-1 text-sm">
-                                Название ({{ activeLocale }})
-                                <input
-                                    v-model="currentTranslation.title"
-                                    :class="fieldClass"
-                                    maxlength="255" />
-                                <span
-                                class="text-red-500">
-                                    {{ error(`translations.${activeLocale}.title`) }}
+                                </label>
+                                <label class="space-y-1 text-sm">
+                                <span class="font-semibold text-blue-700 dark:text-blue-300">
+                                    {{ t('status') }} *
                                 </span>
-                            </label>
-                            <label class="space-y-1 text-sm">
-                                Подзаголовок
-                                <input
-                                    v-model="currentTranslation.subtitle"
-                                    :class="fieldClass"
-                                    maxlength="255" />
-                            </label>
-                            <label class="space-y-1 text-sm md:col-span-2">
-                                Описание
-                                <textarea
-                                    v-model="currentTranslation.description"
-                                    :class="fieldClass"
-                                    rows="3" />
-                            </label>
-                            <label class="space-y-1 text-sm">
-                                Meta title
-                                <input
-                                    v-model="currentTranslation.meta_title"
-                                    :class="fieldClass"
-                                    maxlength="255" />
-                            </label>
-                            <label class="space-y-1 text-sm">
-                                Meta description
-                                <textarea
-                                    v-model="currentTranslation.meta_description"
-                                    :class="fieldClass"
-                                    rows="2" />
-                            </label>
-                        </div>
-                        <p
-                            v-if="error('translations')"
-                            class="mt-2 text-sm text-red-500">
-                            {{ error('translations') }}
-                        </p>
-                    </details>
-                    <details
-                        :open="sections.publication"
-                        @toggle="toggleSection('publication', $event)"
-                        class="rounded border border-slate-300 bg-white p-4 shadow-sm
+                                    <select
+                                        v-model="form.status"
+                                        :class="fieldClass">
+                                        <option value="draft">
+                                            {{ t('statusDraft') }}
+                                        </option>
+                                        <option value="published">
+                                            {{ t('statusPublished') }}
+                                        </option>
+                                        <option value="archived">
+                                            {{ t('statusArchived') }}
+                                        </option>
+                                    </select>
+                                </label>
+                            </div>
+                        </details>
+                        <details
+                            :open="sections.publication"
+                            @toggle="toggleSection('publication', $event)"
+                            class="rounded border border-slate-400 bg-white p-3 shadow-sm
                                dark:border-slate-600 dark:bg-slate-800"
-                    >
-                        <summary
-                            class="flex cursor-pointer select-none
-                                   items-center justify-between gap-3 font-bold text-lg">
-                            Время публикации
-                            <span class="text-sm text-slate-500">▾</span>
-                        </summary>
-                        <div class="mt-4 grid gap-4 md:grid-cols-3">
-                            <label
-                                v-for="item in [
+                        >
+                            <summary
+                                class="cursor-pointer select-none font-semibold text-md">
+                            <span class="text-slate-900 dark:text-slate-100 tracking-wide">
+                                {{ t('datetime') }}
+                            </span>
+                            </summary>
+                            <div class="mt-2 grid gap-4 md:grid-cols-3">
+                                <label
+                                    v-for="item in [
                                     {
                                         key: 'published_at',
-                                        label: 'Дата публикации'
+                                        label: t('publishedAt')
                                     },
                                     {
                                         key: 'show_from_at',
-                                        label: 'Показывать с'
+                                        label: t('show')+' '+t('from')
                                     },
                                     {
                                         key: 'show_to_at',
-                                        label: 'Показывать до'
+                                        label: t('show')+' '+t('to')
                                     }
                                 ]"
-                                :key="item.key"
-                                class="space-y-1 text-sm">
-                                {{ item.label }}
-                                <input
-                                    v-model="form[item.key]"
-                                    type="datetime-local"
-                                    :class="fieldClass" />
-                                <span class="text-red-500">
+                                    :key="item.key"
+                                    class="space-y-1 text-sm">
+                                        <span class="font-semibold text-blue-700 dark:text-blue-300">
+                                            {{ item.label }}
+                                        </span>
+                                    <input
+                                        v-model="form[item.key]"
+                                        type="datetime-local"
+                                        :class="fieldClass" />
+                                    <span class="text-red-500">
                                     {{ error(item.key) }}
                                 </span>
-                            </label>
-                        </div>
-                    </details>
-                    <details
-                        :open="sections.swiper"
-                        @toggle="toggleSection('swiper', $event)"
-                        class="rounded border border-slate-300 bg-white p-4 shadow-sm
-                               dark:border-slate-600 dark:bg-slate-800"
-                    >
-                        <summary
-                            class="flex cursor-pointer select-none
-                                   items-center justify-between gap-3 font-bold text-lg">
-                            Настройки Swiper
-                            <span class="text-sm text-slate-500">▾</span>
-                        </summary>
-                        <div class="mt-4 grid gap-4 md:grid-cols-3">
-                            <label class="space-y-1 text-sm">
-                                Эффект
-                                <select
-                                    v-model="form.effect"
-                                    :class="fieldClass">
-                                    <option
-                                        v-for="effect in [
+                                </label>
+                            </div>
+                        </details>
+                        <details
+                            :open="sections.translations"
+                            @toggle="toggleSection('translations', $event)"
+                            class="rounded border border-slate-400 bg-white p-3 shadow-sm
+                                   dark:border-slate-600 dark:bg-slate-800"
+                        >
+                            <summary
+                                class="cursor-pointer select-none font-semibold text-md">
+                            <span class="text-slate-900 dark:text-slate-100 tracking-wide">
+                                {{ t('translations') }}
+                            </span>
+                            </summary>
+                            <TranslationTabs
+                                class="mt-2"
+                                v-model="activeLocale"
+                                :translations="form.translations"
+                                :available-locales="availableLocales"
+                                :make-translation="makeTranslation"
+                                @update:translations="form.translations = $event"
+                            />
+                            <div class="mt-2 grid gap-4 md:grid-cols-2">
+                                <label class="space-y-1 text-sm">
+                                <span class="font-semibold text-blue-700 dark:text-blue-300">
+                                    {{ t('title') }}
+                                    <span class="uppercase">
+                                        [{{ activeLocale }}]
+                                    </span>
+                                </span>
+                                    <input
+                                        v-model="currentTranslation.title"
+                                        :class="fieldClass"
+                                        maxlength="255" />
+                                    <span
+                                        class="text-red-500">
+                                    {{ error(`translations.${activeLocale}.title`) }}
+                                </span>
+                                </label>
+                                <label class="space-y-1 text-sm">
+                                <span class="font-semibold text-blue-700 dark:text-blue-300">
+                                    {{ t('subtitle') }}
+                                    <span class="uppercase">
+                                        [{{ activeLocale }}]
+                                    </span>
+                                </span>
+                                    <input
+                                        v-model="currentTranslation.subtitle"
+                                        :class="fieldClass"
+                                        maxlength="255" />
+                                </label>
+                                <label class="space-y-1 text-sm md:col-span-2">
+                                <span class="font-semibold text-blue-700 dark:text-blue-300">
+                                    {{ t('description') }}
+                                    <span class="uppercase">
+                                        [{{ activeLocale }}]
+                                    </span>
+                                </span>
+                                    <textarea
+                                        v-model="currentTranslation.description"
+                                        :class="fieldClass"
+                                        rows="3" />
+                                </label>
+                            </div>
+                            <div class="mt-2">
+                                <label class="space-y-1 text-sm">
+                                    <span class="font-semibold text-blue-700 dark:text-blue-300">
+                                        Meta title
+                                        <span class="uppercase">
+                                            [{{ activeLocale }}]
+                                        </span>
+                                    </span>
+                                    <input
+                                        v-model="currentTranslation.meta_title"
+                                        :class="fieldClass"
+                                        maxlength="255" />
+                                </label>
+                            </div>
+                            <div class="mt-2">
+                                <label class="space-y-1 text-sm">
+                                    <span class="font-semibold text-blue-700 dark:text-blue-300">
+                                        Meta description
+                                        <span class="uppercase">
+                                            [{{ activeLocale }}]
+                                        </span>
+                                    </span>
+                                    <textarea
+                                        v-model="currentTranslation.meta_description"
+                                        :class="fieldClass"
+                                        rows="2" />
+                                </label>
+                            </div>
+                            <p
+                                v-if="error('translations')"
+                                class="mt-2 text-sm text-red-500">
+                                {{ error('translations') }}
+                            </p>
+                        </details>
+                        <details
+                            :open="sections.swiper"
+                            @toggle="toggleSection('swiper', $event)"
+                            class="rounded border border-slate-400 bg-white p-3 shadow-sm
+                                   dark:border-slate-600 dark:bg-slate-800"
+                        >
+                            <summary
+                                class="cursor-pointer select-none font-semibold text-md">
+                            <span class="text-slate-900 dark:text-slate-100 tracking-wide">
+                                {{ t('settings') }} Swiper
+                            </span>
+                            </summary>
+                            <div class="mt-2 grid gap-4 md:grid-cols-3">
+                                <label class="space-y-1 text-sm">
+                                <span class="font-semibold text-blue-700 dark:text-blue-300">
+                                    {{ t('effect') }}
+                                </span>
+                                    <select
+                                        v-model="form.effect"
+                                        :class="fieldClass">
+                                        <option
+                                            v-for="effect in [
                                             'slide',
                                             'fade',
                                             'cube',
@@ -479,152 +531,183 @@ const error = key => form.errors[key] || ''
                                             'flip',
                                             'creative'
                                         ]"
-                                        :key="effect" :value="effect">{{ effect }}
-                                    </option>
-                                </select>
-                            </label>
-                            <label class="space-y-1 text-sm">
-                                Скорость анимации (мс)
-                                <input
-                                    v-model.number="form.speed"
-                                    type="number" min="0"
-                                    :class="fieldClass" />
-                            </label>
-                            <label class="space-y-1 text-sm">
-                                Автопрокрутка (мс; пусто — выключена)
-                                <input
-                                    v-model="form.autoplay_delay"
-                                    type="number" min="1"
-                                    :class="fieldClass" />
-                            </label>
-                            <label class="space-y-1 text-sm">
-                                Слайдов на экране
-                                <input
-                                    v-model.number="form.slides_per_view"
-                                    type="number"
-                                    min="0.01"
-                                    max="999.99"
-                                    step="0.01"
-                                    :class="fieldClass" />
-                            </label>
-                            <label class="space-y-1 text-sm">
-                                Расстояние между слайдами (px)
-                                <input
-                                    v-model.number="form.space_between"
-                                    type="number"
-                                    min="0"
-                                    :class="fieldClass" />
-                            </label>
-                        </div>
-                        <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                            <label
-                                v-for="item in [
+                                            :key="effect" :value="effect">{{ effect }}
+                                        </option>
+                                    </select>
+                                </label>
+                                <label class="space-y-1 text-sm">
+                                <span class="font-semibold text-blue-700 dark:text-blue-300">
+                                    {{ t('animationSpeed') }}
+                                </span>
+                                    <input
+                                        v-model.number="form.speed"
+                                        type="number" min="0"
+                                        :class="fieldClass" />
+                                </label>
+                                <label class="space-y-1 text-sm">
+                                <span class="font-semibold text-blue-700 dark:text-blue-300">
+                                    {{ t('autoScroll') }} (мс; пусто — выключена)
+                                </span>
+                                    <input
+                                        v-model="form.autoplay_delay"
+                                        type="number" min="1"
+                                        :class="fieldClass" />
+                                </label>
+                                <label class="space-y-1 text-sm">
+                                <span class="font-semibold text-blue-700 dark:text-blue-300">
+                                    {{ t('slidesScreen') }}
+                                </span>
+                                    <input
+                                        v-model.number="form.slides_per_view"
+                                        type="number"
+                                        min="0.01"
+                                        max="999.99"
+                                        step="0.01"
+                                        :class="fieldClass" />
+                                </label>
+                                <label class="space-y-1 text-sm">
+                                <span class="font-semibold text-blue-700 dark:text-blue-300">
+                                    {{ t('slideSpacing') }}
+                                </span>
+                                    <input
+                                        v-model.number="form.space_between"
+                                        type="number"
+                                        min="0"
+                                        :class="fieldClass" />
+                                </label>
+                            </div>
+                            <div class="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                <label
+                                    v-for="item in [
                                     {
                                         key:'loop',
-                                        label:'Зациклить'
+                                        label: t('cycle')
                                     },
                                     {
                                         key:'keyboard',
-                                        label:'Управление клавиатурой'
+                                        label: t('keyboardControls')
                                     },
                                     {
                                         key:'allow_touch_move',
-                                        label:'Перетаскивание мышью / касанием'
+                                        label: t('DragWithMouseTouch')
                                     },
                                     {
                                         key:'grab_cursor',
-                                        label:'Курсор захвата'
+                                        label: t('captureCursor')
                                     },
                                     {
                                         key:'auto_height',
-                                        label:'Автоматическая высота'
+                                        label: t('automaticHeight')
                                     },
                                     {
                                         key:'pause_on_hover',
-                                        label:'Пауза при наведении'
+                                        label: t('pauseOnHover')
                                     },
                                     {
                                         key:'autoplay_disable_on_interaction',
-                                        label:'Отключать автопрокрутку при взаимодействии'
+                                        label: t('disableAutoScrolling')
                                     },
                                     {
                                         key:'show_navigation',
-                                        label:'Показывать стрелки'
+                                        label: t('showArrows')
                                     },
                                     {
                                         key:'show_pagination',
-                                        label:'Показывать пагинацию'
+                                        label: t('showPagination')
                                     }
                                 ]"
-                                :key="item.key"
-                                class="flex items-center gap-2 text-sm">
-                                <input
-                                    v-model="form[item.key]"
-                                    type="checkbox" />
-                                {{ item.label }}
-                            </label>
-                        </div>
-                    </details>
-                    <details
-                        :open="sections.advanced"
-                        @toggle="toggleSection('advanced', $event)"
-                        class="rounded border border-slate-300 bg-white p-4 shadow-sm
+                                    :key="item.key"
+                                    class="flex items-center gap-2 text-sm">
+                                    <input
+                                        v-model="form[item.key]"
+                                        type="checkbox" />
+                                    {{ item.label }}
+                                </label>
+                            </div>
+                        </details>
+                        <details
+                            :open="sections.advanced"
+                            @toggle="toggleSection('advanced', $event)"
+                            class="rounded border border-slate-400 bg-white p-3 shadow-sm
                                dark:border-slate-600 dark:bg-slate-800"
-                    >
-                        <summary
-                            class="flex cursor-pointer select-none
-                                   items-center justify-between gap-3 font-bold text-lg">
-                            Расширенные параметры
-                            <span class="text-sm text-slate-500">▾</span>
-                        </summary>
-                        <p class="mb-4 text-xs text-slate-500">
-                            Объекты JSON. Значения проверяются перед сохранением.
-                        </p>
-                        <div class="mt-4 grid gap-4 lg:grid-cols-3">
-                            <label
-                                v-for="item in [
+                        >
+                            <summary
+                                class="cursor-pointer select-none font-semibold text-md">
+                            <span class="text-slate-900 dark:text-slate-100 tracking-wide">
+                                {{ t('advancedSettings') }}
+                            </span>
+                            </summary>
+                            <p class="mb-4 text-xs text-slate-500">
+                                {{ t('jsonObjectsDesc') }}
+                            </p>
+                            <div class="mt-2 grid gap-4 lg:grid-cols-3">
+                                <label
+                                    v-for="item in [
                                     {
                                         key:'effect_options',
-                                        label:'Параметры эффекта'
+                                        label: t('effectParameters')
                                     },
                                     {
                                         key:'breakpoints',
-                                        label:'Адаптивные точки'
+                                        label: t('adaptivePoints')
                                     },
                                     {
                                         key:'settings',
-                                        label:'Дополнительные настройки'
+                                        label: t('additionalSettings')
                                     }
                                 ]"
-                                :key="item.key"
-                                class="space-y-1 text-sm">
-                                {{ item.label }}
-                                <textarea
-                                    v-model="jsonText[item.key]"
-                                    rows="7"
-                                    spellcheck="false"
-                                    :class="fieldClass + ' font-mono'" />
-                                <span
-                                    class="text-red-500">
+                                    :key="item.key"
+                                    class="space-y-1 text-sm">
+                                    {{ item.label }}
+                                    <textarea
+                                        v-model="jsonText[item.key]"
+                                        rows="7"
+                                        spellcheck="false"
+                                        :class="fieldClass + ' font-mono'" />
+                                    <span
+                                        class="text-red-500">
                                     {{ jsonErrors[item.key] || error(item.key) }}
                                 </span>
-                            </label>
+                                </label>
+                            </div>
+                        </details>
+                        <div
+                            v-if="Object.keys(form.errors).length"
+                            class="rounded border border-rose-300 p-3 text-sm text-rose-600">
+                            {{ t('errorsFormDesc') }}
                         </div>
-                    </details>
-                    <div
-                        v-if="Object.keys(form.errors).length"
-                        class="rounded border border-rose-300 p-3 text-sm text-rose-600">
-                        Есть ошибки заполнения. Проверьте поля формы.
-                    </div>
-                    <div class="flex justify-end">
-                        <button
-                            type="submit"
-                            :disabled="form.processing"
-                            class="rounded bg-blue-600 px-6 py-2 font-semibold text-white
-                                   hover:bg-blue-700 disabled:opacity-50">
-    {{ form.processing ? 'Сохранение...' : (editing ? 'Сохранить изменения' : 'Создать слайдер') }}
-                        </button>
-                    </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <a :href="route('admin.sliders.index')"
+                               class="flex items-center btn px-3 py-1 rounded shadow-md
+                                     bg-sky-600 text-white text-sm font-semibold
+                                     transition-colors duration-300 ease-in-out
+                                     hover:bg-sky-700 focus:bg-sky-700 focus:outline-none">
+                                ← {{ t('back') }}
+                            </a>
+                            <button
+                                type="submit"
+                                :disabled="form.processing"
+                                class="flex items-center gap-2 btn px-3 py-1 bg-teal-500 shadow-md
+                                       text-white text-sm font-semibold transition-colors
+                                       duration-300 ease-in-out hover:bg-teal-600 focus:bg-teal-600
+                                       focus:outline-none ms-4 mb-0 rounded">
+                                <svg
+                                    class="w-3 h-3 fill-current text-slate-100"
+                                    viewBox="0 0 16 16">
+                                    <path d="M14.3 2.3L5 11.6 1.7 8.3
+                                               c-.4-.4-1-.4-1.4 0
+                                               -.4.4-.4 1 0 1.4l4 4
+                                               c.2.2.4.3.7.3
+                                               .3 0 .5-.1.7-.3l10-10
+                                               c.4-.4.4-1 0-1.4
+                                               -.4-.4-1-.4-1.4 0z"></path>
+                                </svg>
+            <span>
+              {{ form.processing ? t('saving') : (editing ? t('saveChanges') : t('createSlider')) }}
+            </span>
+                            </button>
+                        </div>
+                    </section>
                 </form>
 
             </div>

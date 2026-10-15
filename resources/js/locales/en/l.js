@@ -5,6 +5,7 @@ export default {
     lastViewedAt: 'Last viewed',
     lastUpdate: 'Last update',
     lastUsed: 'Last used',
+    latencyMs: 'Latency, ms',
     latestNews: 'Latest news',
     learningCategories: 'Training categories',
     latitude: 'Latitude',

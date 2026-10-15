@@ -5,6 +5,7 @@ export default {
     lastViewedAt: 'Соңғы қаралған',
     lastUpdate: 'Соңғы жаңартылған',
     lastUsed: 'Соңғы пайдалану',
+    latencyMs: 'Кідіріс, мс',
     latestNews: 'Соңғы жаңалықтар',
     learningCategories: 'Оқыту санаттары',
     latitude: 'Ендік',

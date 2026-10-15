@@ -821,9 +821,9 @@ const deleteSlider = () => {
 </script>
 
 <template>
-    <AdminLayout title="Слайдеры">
+    <AdminLayout :title="t('sliders')">
         <template #header>
-            <TitlePage>Слайдеры</TitlePage>
+            <TitlePage>{{ t('sliders') }}</TitlePage>
         </template>
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
@@ -839,7 +839,7 @@ const deleteSlider = () => {
                            sm:flex-row sm:items-center sm:justify-between"
                 >
                     <DefaultButton :href="route('admin.sliders.create')">
-                        Добавить слайдер
+                        {{ t('addSlider') }}
                     </DefaultButton>
                 </div>
 

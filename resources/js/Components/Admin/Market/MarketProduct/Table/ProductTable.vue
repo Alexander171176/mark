@@ -9,6 +9,7 @@
 import { computed, defineEmits, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
+import EntityImageGallery from '@/Components/Admin/UI/Image/ImageGallery.vue'
 
 import LeftToggle from '@/Components/Admin/UI/Buttons/LeftToggle.vue'
 import MainToggle from '@/Components/Admin/UI/Buttons/MainToggle.vue'
@@ -153,44 +154,6 @@ const brandTitle = (product) => {
 /** Название категории. */
 const categoryTitle = (category) => {
     return category?.translation?.title || `ID: ${category?.id}`
-}
-
-/* ======================== Images ======================== */
-
-/** Первое изображение товара с учётом order. */
-const getPrimaryImage = (product) => {
-    if (!Array.isArray(product?.images) || !product.images.length) {
-        return null
-    }
-
-    return [...product.images].sort((left, right) => {
-        return Number(left?.order ?? 0) - Number(right?.order ?? 0)
-    })[0]
-}
-
-/** URL изображения товара. */
-const imageUrl = (product) => {
-    const image = getPrimaryImage(product)
-
-    return image?.webp_url
-        || image?.thumb_url
-        || image?.image_url
-        || image?.url
-        || '/storage/market/market_product_images/default-image.png'
-}
-
-/** Alt изображения. */
-const imageAlt = (product) => {
-    const image = getPrimaryImage(product)
-
-    return image?.alt || productTitle(product)
-}
-
-/** Title изображения. */
-const imageTitle = (product) => {
-    const image = getPrimaryImage(product)
-
-    return image?.caption || productTitle(product)
 }
 
 /* ======================== Owner ======================== */
@@ -713,14 +676,10 @@ const publicationTitle = (product) => {
                             <!-- Image -->
                             <td class="w-16 px-1 py-1">
                                 <div class="flex justify-center">
-                                    <img
-                                        :src="imageUrl(product)"
-                                        :alt="imageAlt(product)"
-                                        :title="imageTitle(product)"
-                                        class="h-10 w-14 rounded-sm border
-                                               border-slate-300 object-cover
-                                               dark:border-slate-600"
-                                        loading="lazy"
+                                    <EntityImageGallery
+                                        :images="product.images || []"
+                                        :alt="productTitle(product)"
+                                        height-class="h-10"
                                     />
                                 </div>
 

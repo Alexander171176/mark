@@ -56,6 +56,34 @@ class SliderSharedResource extends JsonResource
                 ? new SliderTranslationResource($translation)
                 : null,
 
+            /** Изображения слайдов для мини-галереи в Index. */
+            'preview_images' => $this->whenLoaded('slides', function () {
+                return $this->slides
+                    ->sortBy(fn ($slide) => [(int) $slide->sort, (int) $slide->id])
+                    ->flatMap(function ($slide) {
+                        if (! $slide->relationLoaded('images')) {
+                            return [];
+                        }
+
+                        return $slide->images->map(function ($image) use ($slide) {
+                            $media = $image->getFirstMedia('images');
+                            if (! $media) {
+                                return null;
+                            }
+
+                            return [
+                                'id' => (int) $image->id,
+                                'slide_id' => (int) $slide->id,
+                                'url' => $media->getUrl(),
+                                'alt' => $image->alt ?? '',
+                                'caption' => $image->caption ?? '',
+                            ];
+                        })->filter()->values();
+                    })
+                    ->values()
+                    ->all();
+            }),
+
             /** Владелец */
             'owner' => $this->whenLoaded('owner', function () {
                 if (! $this->owner) {

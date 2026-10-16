@@ -63,6 +63,8 @@ class SliderController extends Controller
             ->with([
                 'translations' => fn ($query) => $query->whereIn('locale', $locales),
                 'owner:id,name,email,profile_photo_path',
+                'slides' => fn ($query) => $query->orderBy('sort')->orderBy('id'),
+                'slides.images.media',
             ])
             ->withCount('slides')
             ->ordered()

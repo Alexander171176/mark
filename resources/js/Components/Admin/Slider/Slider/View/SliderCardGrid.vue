@@ -19,6 +19,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
+import SliderImageGallery from '@/Components/Admin/Slider/Slider/Image/SliderImageGallery.vue'
 
 import ActivityToggle from '@/Components/Admin/UI/Buttons/ActivityToggle.vue'
 import DeleteIconButton from '@/Components/Admin/UI/Buttons/DeleteIconButton.vue'
@@ -86,9 +87,6 @@ const localSliders = ref([])
 
 /** Открытые информационные блоки владельцев */
 const openedOwnerBlocks = ref([])
-
-/** ID изображений, которые не удалось загрузить */
-const failedImages = ref([])
 
 /** Синхронизация с родительским списком */
 watch(
@@ -223,86 +221,6 @@ const toggleOwnerBlock = sliderId => {
     openedOwnerBlocks.value.push(sliderId)
 }
 
-/* =========================================================
- * IMAGES
- * ========================================================= */
-
-/**
- * Выбор изображения слайдера.
- *
- * Поддерживается готовое preview_image из ресурса,
- * а также изображения первого слайда, если они
- * передаются в составе slides.
- */
-const getPrimaryImage = slider => {
-    if (slider?.preview_image) {
-        return slider.preview_image
-    }
-
-    const slides = Array.isArray(slider?.slides)
-        ? slider.slides
-        : []
-
-    const firstSlide = [...slides].sort((left, right) => {
-        return Number(left?.sort ?? 0) - Number(right?.sort ?? 0)
-    })[0]
-
-    if (!firstSlide) {
-        return null
-    }
-
-    const images = [
-        ...(firstSlide.desktop_images || []),
-        ...(firstSlide.images || []),
-        ...(firstSlide.tablet_images || []),
-        ...(firstSlide.mobile_images || []),
-    ]
-
-    return images[0] || null
-}
-
-/** Изображение по умолчанию */
-const defaultImage = '/storage/slider/slider_slide_images/default-image.png'
-
-/** URL изображения слайдера */
-const imageUrl = slider => {
-    const image = getPrimaryImage(slider)
-
-    if (typeof image === 'string') {
-        return image || defaultImage
-    }
-
-    return image?.webp_url
-        || image?.thumb_url
-        || image?.image_url
-        || image?.url
-        || defaultImage
-}
-
-/** Alt изображения */
-const imageAlt = slider => {
-    const image = getPrimaryImage(slider)
-
-    return image?.alt || sliderTitle(slider)
-}
-
-/** Title изображения */
-const imageTitle = slider => {
-    const image = getPrimaryImage(slider)
-
-    return image?.caption || sliderTitle(slider)
-}
-
-/** Обработка ошибки загрузки */
-const handleImageError = (sliderId, event) => {
-    if (event?.target?.src?.endsWith('/default-image.png')) {
-        return
-    }
-
-    if (!failedImages.value.includes(sliderId)) {
-        failedImages.value.push(sliderId)
-    }
-}
 
 /* =========================================================
  * STATUS
@@ -655,15 +573,10 @@ const approveSlider = (slider, status, note = '') => {
 
                             <div class="relative w-full overflow-hidden
                                         bg-slate-200 dark:bg-slate-900">
-                                <img
-                                    :src="failedImages.includes(slider.id)
-                                        ? defaultImage
-                                        : imageUrl(slider)"
-                                    :alt="imageAlt(slider)"
-                                    :title="imageTitle(slider)"
-                                    class="h-auto w-full object-cover"
-                                    loading="lazy"
-                                    @error="handleImageError(slider.id, $event)"
+                                <SliderImageGallery
+                                    :images="slider.preview_images || []"
+                                    :alt="sliderTitle(slider)"
+                                    height-class="h-44"
                                 />
 
                                 <!-- Количество слайдов -->
@@ -951,3 +864,4 @@ const approveSlider = (slider, status, note = '') => {
         </div>
     </div>
 </template>
+

@@ -184,6 +184,66 @@ const parseJsonFields = () => {
     return Object.keys(jsonErrors.value).length === 0
 }
 
+// Все ошибки Laravel доступны пользователю, включая вложенные поля слайдов.
+const validationErrors = computed(() => Object.entries(form.errors).flatMap(([path, message]) => {
+    const messages = Array.isArray(message) ? message : [message]
+    return messages.filter(Boolean).map(text => ({ path, text: String(text), label: errorLabel(path) }))
+}))
+
+const fieldNames = {
+    code: 'Код слайдера', type: 'Тип слайдера', status: 'Статус',
+    title: 'Заголовок', subtitle: 'Подзаголовок', label: 'Метка',
+    description: 'Описание', meta_title: 'Meta title', meta_description: 'Meta description',
+    images: 'Изображения', file: 'Файл изображения', alt: 'Alt', caption: 'Caption',
+    translations: 'Переводы', actions: 'Кнопки и действия', advantages: 'Преимущества',
+    action_value: 'Значение действия / URL', published_at: 'Дата публикации',
+    show_from_at: 'Показывать с', show_to_at: 'Показывать до',
+    autoplay_delay: 'Автопрокрутка', effect_options: 'Настройки эффекта',
+    breakpoints: 'Адаптивные настройки', settings: 'Настройки',
+    slides: 'Слайды', id: 'Идентификатор', activity: 'Активность',
+    animation_type: 'Анимация', background_color: 'Цвет фона'
+}
+const errorLabel = path => {
+    const parts = path.split('.')
+    const result = []
+    for (let i = 0; i < parts.length; i++) {
+        const part = parts[i]
+        if (part === 'slides' && /^\d+$/.test(parts[i + 1] ?? '')) {
+            result.push(`Слайд №${Number(parts[++i]) + 1}`)
+        } else if (['images', 'actions', 'advantages'].includes(part) && /^\d+$/.test(parts[i + 1] ?? '')) {
+            result.push(`${fieldNames[part]} №${Number(parts[++i]) + 1}`)
+        } else if (part === 'translations' && parts[i + 1] && !/^\d+$/.test(parts[i + 1])) {
+            result.push(`Перевод [${parts[++i].toUpperCase()}]`)
+        } else if (/^\d+$/.test(part)) {
+            result.push(`№${Number(part) + 1}`)
+        } else {
+            result.push(fieldNames[part] ?? part.replaceAll('_', ' '))
+        }
+    }
+    return result.join(' → ')
+}
+
+const scrollToErrors = () => document.getElementById('slider-validation-errors')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+const focusValidationError = async path => {
+    const slideMatch = path.match(/^slides\.(\d+)(?:\.|$)/)
+    if (slideMatch) {
+        await builder.value?.focusError?.(path)
+        await nextTick()
+        document.getElementById('slider-slide-builder')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        return
+    }
+    const localeMatch = path.match(/^translations\.([^.]+)\./)
+    if (localeMatch) activeLocale.value = localeMatch[1]
+    const section = path.startsWith('translations') ? 'translations'
+        : ['published_at', 'show_from_at', 'show_to_at'].includes(path) ? 'publication'
+            : ['effect', 'speed', 'autoplay_delay', 'slides_per_view', 'space_between', 'loop', 'keyboard', 'show_navigation', 'show_pagination'].includes(path) ? 'swiper'
+                : ['effect_options', 'breakpoints', 'settings'].includes(path) ? 'advanced' : 'main'
+    sections.value[section] = true
+    await nextTick()
+    document.getElementById(`slider-form-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
 const submit = () => {
     if (form.processing) return
     form.clearErrors()
@@ -214,7 +274,10 @@ const submit = () => {
         forceFormData: true,
         preserveScroll: true,
         onError: errors => {
-            toast.error(Object.values(errors)[0] || 'Проверьте заполнение полей.')
+            toast.error(`Не удалось сохранить: ${Object.keys(errors).length} ошибок заполнения. Подробности показаны в форме.`)
+            nextTick(() => {
+                document.getElementById('slider-validation-errors')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            })
         }
     }
 
@@ -261,8 +324,26 @@ const error = key => form.errors[key] || ''
                     </span>
                 </div>
 
+                <section
+                    v-if="validationErrors.length"
+                    id="slider-validation-errors"
+                    role="alert"
+                    aria-live="polite"
+                    class="mb-4 rounded-lg border border-red-400 bg-red-50 p-4 text-sm text-red-900 dark:border-red-600 dark:bg-red-950/40 dark:text-red-100">
+                    <h3 class="mb-2 font-bold">Ошибки заполнения ({{ validationErrors.length }})</h3>
+                    <p class="mb-3">Исправьте перечисленные поля и повторите сохранение. Нажмите на ошибку, чтобы перейти к нужному разделу.</p>
+                    <ul class="max-h-80 list-disc space-y-2 overflow-y-auto pl-5">
+                        <li v-for="(item, index) in validationErrors" :key="`${item.path}-${index}`">
+                            <button type="button" class="text-left underline decoration-dotted underline-offset-2 hover:no-underline"
+                                    @click="focusValidationError(item.path)">
+                                <strong>{{ item.label }}:</strong> {{ item.text }}
+                            </button>
+                        </li>
+                    </ul>
+                </section>
                 <form class="w-full space-y-5" @submit.prevent="submit">
                     <SliderSlideBuilder
+                        id="slider-slide-builder"
                         ref="builder"
                         v-model="form.slides"
                         :errors="form.errors"
@@ -274,6 +355,7 @@ const error = key => form.errors[key] || ''
                         class="rounded border border-slate-300 bg-white p-4 shadow-sm
                                dark:border-slate-600 dark:bg-slate-800 space-y-5">
                         <details
+                            id="slider-form-main"
                             :open="sections.main"
                             @toggle="toggleSection('main', $event)"
                             class="rounded border border-slate-400 bg-white p-3 shadow-sm
@@ -364,6 +446,7 @@ const error = key => form.errors[key] || ''
                             </div>
                         </details>
                         <details
+                            id="slider-form-publication"
                             :open="sections.publication"
                             @toggle="toggleSection('publication', $event)"
                             class="rounded border border-slate-400 bg-white p-3 shadow-sm
@@ -407,6 +490,7 @@ const error = key => form.errors[key] || ''
                             </div>
                         </details>
                         <details
+                            id="slider-form-translations"
                             :open="sections.translations"
                             @toggle="toggleSection('translations', $event)"
                             class="rounded border border-slate-400 bg-white p-3 shadow-sm
@@ -503,6 +587,7 @@ const error = key => form.errors[key] || ''
                             </p>
                         </details>
                         <details
+                            id="slider-form-swiper"
                             :open="sections.swiper"
                             @toggle="toggleSection('swiper', $event)"
                             class="rounded border border-slate-400 bg-white p-3 shadow-sm
@@ -626,6 +711,7 @@ const error = key => form.errors[key] || ''
                             </div>
                         </details>
                         <details
+                            id="slider-form-advanced"
                             :open="sections.advanced"
                             @toggle="toggleSection('advanced', $event)"
                             class="rounded border border-slate-400 bg-white p-3 shadow-sm
@@ -671,10 +757,11 @@ const error = key => form.errors[key] || ''
                                 </label>
                             </div>
                         </details>
-                        <div
-                            v-if="Object.keys(form.errors).length"
-                            class="rounded border border-rose-300 p-3 text-sm text-rose-600">
-                            {{ t('errorsFormDesc') }}
+                        <div v-if="validationErrors.length" class="rounded border border-rose-300 p-3 text-sm text-rose-600">
+                            Найдено ошибок: {{ validationErrors.length }}.
+                            <button type="button" class="ml-2 font-semibold underline" @click="scrollToErrors()">
+                                Показать все ошибки
+                            </button>
                         </div>
                         <div class="flex items-center justify-between gap-3">
                             <a :href="route('admin.sliders.index')"
@@ -702,7 +789,7 @@ const error = key => form.errors[key] || ''
                                                c.4-.4.4-1 0-1.4
                                                -.4-.4-1-.4-1.4 0z"></path>
                                 </svg>
-            <span>
+                                <span>
               {{ form.processing ? t('saving') : (editing ? t('saveChanges') : t('createSlider')) }}
             </span>
                             </button>

@@ -206,17 +206,43 @@ class SliderBuilderService
 
     private function syncTranslations(Model $parent, array $translations, array $fields): void
     {
-        // Формат: { "ru": { "title": "..." }, "en": {...} }.
+        $keepLocales = [];
+
         foreach ($translations as $locale => $data) {
             if (! is_string($locale) || ! is_array($data)) {
-                throw ValidationException::withMessages(['translations' => 'Неверный формат переводов.']);
+                throw ValidationException::withMessages([
+                    'translations' => 'Неверный формат переводов.',
+                ]);
             }
+
+            $values = Arr::only($data, $fields);
+            foreach ($values as $field => $value) {
+                if (is_string($value)) {
+                    $value = trim($value);
+                }
+                $values[$field] = $value === '' ? null : $value;
+            }
+
+            // Не создаём строку в БД для полностью пустого языка.
+            if (! collect($values)->contains(fn ($value) => $value !== null)) {
+                continue;
+            }
+
+            // У кнопок label в БД NOT NULL. Не допускаем SQL-исключения.
+            if (in_array('aria_label', $fields, true) && blank($values['label'] ?? null)) {
+                throw ValidationException::withMessages([
+                    'translations' => "Укажите название кнопки для языка [$locale].",
+                ]);
+            }
+
             $parent->translations()->updateOrCreate(
                 ['locale' => $locale],
-                Arr::only($data, $fields)
+                $values
             );
+            $keepLocales[] = $locale;
         }
-        $parent->translations()->whereNotIn('locale', array_keys($translations))->delete();
+
+        $parent->translations()->whereNotIn('locale', $keepLocales)->delete();
     }
 
     /**
@@ -252,6 +278,19 @@ class SliderBuilderService
                     throw ValidationException::withMessages(["$path.$position.id" => 'Изображение не принадлежит текущему слайдеру.']);
                 }
                 $image = SliderSlideImage::query()->findOrFail($id);
+                // Обновляем подписи только у изображения текущего слайда.
+                // Если оно используется другими слайдами, не меняем общую запись.
+                $attachedHere = $slide->images()->whereKey($id)->exists();
+                if (! $attachedHere) {
+                    throw ValidationException::withMessages(["$path.$position.id" => 'Изображение не принадлежит текущему слайду.']);
+                }
+                if (array_key_exists('alt', $data) || array_key_exists('caption', $data)) {
+                    $shared = $image->slides()->whereKeyNot($slide->getKey())->exists();
+                    if ($shared) {
+                        throw ValidationException::withMessages(["$path.$position.id" => 'Нельзя изменить подписи изображения, используемого другими слайдами.']);
+                    }
+                    $image->fill(Arr::only($data, ['alt', 'caption']))->save();
+                }
             } else {
                 $image = new SliderSlideImage();
                 $image->order = $position;

@@ -19,6 +19,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 
+import SliderImageGallery from '@/Components/Admin/Slider/Slider/Image/SliderImageGallery.vue'
 import ActivityToggle from '@/Components/Admin/UI/Buttons/ActivityToggle.vue'
 import DeleteIconButton from '@/Components/Admin/UI/Buttons/DeleteIconButton.vue'
 import IconEdit from '@/Components/Admin/UI/Buttons/IconEdit.vue'
@@ -136,79 +137,6 @@ const sliderSubtitle = slider => {
 /** Описание слайдера. */
 const sliderDescription = slider => {
     return sliderTranslation(slider)?.description || ''
-}
-
-/* ======================== Images ======================== */
-
-/** Изображение по умолчанию. */
-const defaultImage = '/storage/slider/slider_slide_images/default-image.png'
-
-/** Список изображений первого слайда. */
-const getPrimaryImage = slider => {
-    if (slider?.preview_image) {
-        return slider.preview_image
-    }
-
-    if (!Array.isArray(slider?.slides) || !slider.slides.length) {
-        return null
-    }
-
-    const firstSlide = [...slider.slides].sort((left, right) => {
-        return Number(left?.sort ?? 0) - Number(right?.sort ?? 0)
-    })[0]
-
-    const images = [
-        ...(firstSlide?.desktop_images || []),
-        ...(firstSlide?.images || []),
-        ...(firstSlide?.tablet_images || []),
-        ...(firstSlide?.mobile_images || []),
-    ]
-
-    return [...images].sort((left, right) => {
-        return Number(left?.order ?? 0) - Number(right?.order ?? 0)
-    })[0] || null
-}
-
-/** URL изображения слайдера. */
-const imageUrl = slider => {
-    const image = getPrimaryImage(slider)
-
-    if (typeof image === 'string') {
-        return image || defaultImage
-    }
-
-    return image?.webp_url
-        || image?.thumb_url
-        || image?.image_url
-        || image?.url
-        || defaultImage
-}
-
-/** Alt изображения. */
-const imageAlt = slider => {
-    const image = getPrimaryImage(slider)
-
-    return image?.alt || sliderTitle(slider)
-}
-
-/** Title изображения. */
-const imageTitle = slider => {
-    const image = getPrimaryImage(slider)
-
-    return image?.caption || sliderTitle(slider)
-}
-
-/** Подстановка заглушки при ошибке загрузки. */
-const handleImageError = event => {
-    const image = event?.target
-
-    if (!image) {
-        return
-    }
-
-    if (!image.src.endsWith(defaultImage)) {
-        image.src = defaultImage
-    }
 }
 
 /* ======================== Owner ======================== */
@@ -590,15 +518,11 @@ const swiperSettingsTitle = slider => {
                             <!-- Image -->
                             <td class="w-16 px-1 py-1">
                                 <div class="flex justify-center">
-                                    <img
-                                        :src="imageUrl(slider)"
-                                        :alt="imageAlt(slider)"
-                                        :title="imageTitle(slider)"
-                                        class="h-10 w-14 rounded-sm border
-                                               border-slate-300 object-cover
-                                               dark:border-slate-600"
-                                        loading="lazy"
-                                        @error="handleImageError"
+                                    <SliderImageGallery
+                                        :images="slider.preview_images || []"
+                                        :alt="sliderTitle(slider)"
+                                        height-class="h-12"
+                                        class="w-20"
                                     />
                                 </div>
                                 <div
@@ -842,3 +766,4 @@ const swiperSettingsTitle = slider => {
         </div>
     </div>
 </template>
+

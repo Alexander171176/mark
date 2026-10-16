@@ -15,11 +15,6 @@ class SliderBuilderRequest extends SliderRequest
     public function rules(): array
     {
         $rules = parent::rules();
-        $locales = $this->availableLocales();
-        $localeRules = static fn (string $path): array => [
-            "$path" => ['sometimes', 'array'],
-            "$path.*" => ['required', 'array'],
-        ];
 
         $rules += [
             'slides' => ['sometimes', 'array', 'max:200'],
@@ -54,8 +49,20 @@ class SliderBuilderRequest extends SliderRequest
             'slides.*.translations.*.description' => ['nullable', 'string'],
             'slides.*.images' => ['sometimes', 'array', 'max:30'],
             'slides.*.images.*' => ['required', 'array:id,file,alt,caption'],
-            'slides.*.images.*.id' => ['nullable', 'required_without:slides.*.images.*.file', 'integer', 'min:1', Rule::exists('slider_slide_images', 'id')],
-            'slides.*.images.*.file' => ['nullable', 'required_without:slides.*.images.*.id', 'image', 'mimes:jpg,jpeg,png,webp,avif', 'max:10240'],
+            'slides.*.images.*.id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                'min:1',
+                Rule::exists('slider_slide_images', 'id'),
+            ],
+            'slides.*.images.*.file' => [
+                'sometimes',
+                'file',
+                'image',
+                'mimes:jpg,jpeg,png,webp,avif',
+                'max:10240',
+            ],
             'slides.*.images.*.alt' => ['nullable', 'string', 'max:255'],
             'slides.*.images.*.caption' => ['nullable', 'string', 'max:255'],
             'slides.*.actions' => ['sometimes', 'array', 'max:30'],
@@ -133,13 +140,62 @@ class SliderBuilderRequest extends SliderRequest
                     $uniqueIds($items, "slides.$i.$relation");
                     if (! is_array($items)) continue;
                     foreach ($items as $j => $item) {
-                        if (! is_array($item)) continue;
-                        if ($relation === 'images' && !empty($item['id']) && !empty($item['file'])) {
-                            $validator->errors()->add("slides.$i.images.$j", 'Нельзя одновременно передавать ID и новый файл.');
+                        if (! is_array($item)) {
+                            continue;
                         }
-                        $checkTranslations($item['translations'] ?? null, "slides.$i.$relation.$j.translations");
-                        if ($relation === 'advantages' && in_array($item['icon_type'] ?? null, ['lucide','heroicon','class'], true) && blank($item['icon'] ?? null)) {
-                            $validator->errors()->add("slides.$i.advantages.$j.icon", 'Для выбранного типа требуется иконка.');
+
+                        // Проверяем, что изображение имеет либо ID, либо новый файл.
+                        if ($relation === 'images') {
+                            $hasId = !empty($item['id']);
+
+                            $hasFile = $this->hasFile(
+                                "slides.$i.images.$j.file"
+                            );
+
+                            if ($hasId === $hasFile) {
+                                $validator->errors()->add(
+                                    "slides.$i.images.$j",
+                                    'Укажите либо существующее изображение, либо новый файл.'
+                                );
+                            }
+                        }
+
+                        // Частично заполненный перевод кнопки обязан иметь label.
+                        // Полностью пустые переводы разрешены: сервис их пропустит.
+                        if ($relation === 'actions' && is_array($item['translations'] ?? null)) {
+                            foreach ($item['translations'] as $code => $translation) {
+                                if (! is_array($translation)) continue;
+                                $hasContent = collect(['label', 'title', 'aria_label'])
+                                    ->contains(fn ($field) => filled($translation[$field] ?? null));
+                                if ($hasContent && blank($translation['label'] ?? null)) {
+                                    $validator->errors()->add(
+                                        "slides.$i.actions.$j.translations.$code.label",
+                                        "Укажите название кнопки для языка [$code]."
+                                    );
+                                }
+                            }
+                        }
+
+                        // Проверка переводов вложенных элементов.
+                        $checkTranslations(
+                            $item['translations'] ?? null,
+                            "slides.$i.$relation.$j.translations"
+                        );
+
+                        // Проверка обязательной иконки преимущества.
+                        if (
+                            $relation === 'advantages'
+                            && in_array(
+                                $item['icon_type'] ?? null,
+                                ['lucide', 'heroicon', 'class'],
+                                true
+                            )
+                            && blank($item['icon'] ?? null)
+                        ) {
+                            $validator->errors()->add(
+                                "slides.$i.advantages.$j.icon",
+                                'Для выбранного типа требуется иконка.'
+                            );
                         }
                     }
                 }

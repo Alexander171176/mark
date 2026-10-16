@@ -1,6 +1,6 @@
 <script setup>
 /** Редактор вложенного дерева. Запросы выполняет только SliderForm.vue. */
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -29,6 +29,7 @@ const locales = computed(() => {
 })
 const locale = ref(props.currentLocale)
 const selected = ref(0)
+const addSlideFileInput = ref(null)
 const device = ref('desktop')
 const urls = new Set()
 
@@ -72,6 +73,8 @@ watch(() => props.storageKey, () => {
 })
 
 const error = path => props.errors[path] || ''
+const slideErrorCount = index => Object.keys(props.errors).filter(key => key === `slides.${index}` || key.startsWith(`slides.${index}.`)).length
+
 
 const cls = 'w-full rounded border border-slate-400 dark:border-slate-500 ' +
     'bg-white dark:bg-slate-900 px-3 py-1 text-sm text-slate-800 dark:text-slate-100'
@@ -163,9 +166,50 @@ const move = (index, offset) => {
     selected.value = target
 }
 
+// Создаём слайд только после выбора допустимого изображения.
 const add = () => {
-    items.value = [...items.value, makeSlide()]
-    selected.value = items.value.length - 1
+    addSlideFileInput.value?.click()
+}
+
+const validImage = file => ['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)
+    && file.size <= 10 * 1024 * 1024
+
+const newImage = file => {
+    const preview_url = URL.createObjectURL(file)
+    urls.add(preview_url)
+    return { _key: uiKey(), file, alt: '', caption: '', preview_url }
+}
+
+const upload = event => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return // Отмена диалога не создаёт пустой слайд.
+    if (!validImage(file)) {
+        window.alert('Допустимы JPEG, PNG, WebP, AVIF до 10 МБ.')
+        return
+    }
+    const slide = makeSlide()
+    slide.images = [newImage(file)]
+    const index = items.value.length
+    items.value = [...items.value, slide]
+    selected.value = index
+    sections.value.images = true
+}
+
+const replaceImage = event => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file || !active.value) return
+    if (!validImage(file)) {
+        window.alert('Допустимы JPEG, PNG, WebP, AVIF до 10 МБ.')
+        return
+    }
+    const previous = active.value.images[0]
+    const image = newImage(file)
+    image.alt = previous?.alt ?? ''
+    image.caption = previous?.caption ?? ''
+    if (previous) release(previous)
+    active.value.images = [image]
 }
 
 const release = image => {
@@ -180,25 +224,6 @@ const remove = index => {
     for (const image of items.value[index].images) release(image)
     items.value = items.value.filter((_, i) => i !== index)
     selected.value = Math.min(selected.value, Math.max(0, items.value.length - 1))
-}
-
-const upload = event => {
-    if (!active.value) return
-    const files = Array.from(event.target.files ?? [])
-    for (const file of files) {
-        if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)
-            || file.size > 10 * 1024 * 1024) continue
-        if (active.value.images.length >= 30) break
-        const preview_url = URL.createObjectURL(file)
-        urls.add(preview_url)
-        active.value.images.push({ _key: uiKey(), file, alt: '', caption: '', preview_url })
-    }
-    event.target.value = ''
-}
-
-const removeImage = index => {
-    release(active.value.images[index])
-    active.value.images.splice(index, 1)
 }
 
 const addAction = () => active.value?.actions.push(makeAction())
@@ -228,9 +253,10 @@ const serialize = () => items.value.map((slide, index) => ({
     ...clean(slide), sort: index,
     published_at: slide.published_at || null,
     show_from_at: slide.show_from_at || null, show_to_at: slide.show_to_at || null,
-    images: slide.images.map(image => image.file
-        ? { file: image.file, alt: image.alt ?? '', caption: image.caption ?? '' }
-        : { id: image.id }),
+    images: slide.images.map(image => ({
+        ...(image.file ? { file: image.file } : { id: image.id }),
+        alt: image.alt ?? '', caption: image.caption ?? ''
+    })),
     actions: slide.actions.map((action, i) => ({ ...clean(action), sort: i })),
     advantages: slide.advantages.map((advantage, i) => ({ ...clean(advantage), sort: i }))
 }))
@@ -248,7 +274,33 @@ onBeforeUnmount(() => {
     urls.clear()
 })
 
-defineExpose({ normalize, serialize })
+const focusError = async path => {
+    const match = path.match(/^slides\.(\d+)(?:\.(.*))?$/)
+    if (!match) return
+    const index = Number(match[1])
+    if (index < 0 || index >= items.value.length) return
+    selected.value = index
+    const rest = match[2] ?? ''
+    const section = rest.startsWith('images') ? 'images'
+        : rest.startsWith('translations') ? 'translations'
+            : rest.startsWith('actions') ? 'actions'
+                : rest.startsWith('advantages') ? 'advantages'
+                    : ['published_at', 'show_from_at', 'show_to_at'].some(key => rest.startsWith(key)) ? 'publication'
+                        : ['background_color', 'text_color', 'accent_color', 'overlay_color', 'overlay_opacity', 'image_position', 'content_position', 'animation_type', 'animation_duration', 'animation_delay', 'animation_stagger', 'animation_once', 'animation_settings', 'settings'].some(key => rest.startsWith(key)) ? 'appearance'
+                            : 'properties'
+    sections.value[section] = true
+    const localeMatch = rest.match(/translations\.([^.]+)\./)
+    if (localeMatch && locales.value.includes(localeMatch[1])) locale.value = localeMatch[1]
+    // details.open обновляем непосредственно: состояние секции может быть сохранено закрытым.
+    await nextTick()
+    const element = document.getElementById(`slider-slide-${section}`)
+    if (element) {
+        element.open = true
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+}
+
+defineExpose({ normalize, serialize, focusError })
 </script>
 
 <template>
@@ -271,6 +323,14 @@ defineExpose({ normalize, serialize })
                 @click="add">
                 + {{ t('addSlide') }}
             </button>
+            <!-- Выбор изображения создаёт слайд только после успешного выбора файла. -->
+            <input
+                ref="addSlideFileInput"
+                type="file"
+                class="sr-only"
+                accept="image/jpeg,image/png,image/webp,image/avif"
+                tabindex="-1"
+                @change="upload" />
         </div>
         <p
             v-if="error('slides')"
@@ -280,108 +340,11 @@ defineExpose({ normalize, serialize })
 
         <div v-if="items.length" class="space-y-5">
 
-            <!-- Горизонтальные карточки: миниатюра, подпись и управление -->
-            <nav
-                class="flex w-full max-w-full gap-3 overflow-x-auto pb-3"
-                :aria-label="t('slides')">
-                <div
-                    v-for="(slide, index) in items"
-                    :key="slide.id ?? slide._key"
-                    class="flex w-44 shrink-0 flex-col rounded-lg border p-2 transition-colors
-                           dark:border-slate-600"
-                    :class="selected === index
-                        ? 'border-blue-500 bg-blue-50 dark:bg-slate-700'
-                        : 'border-slate-500 bg-white dark:bg-slate-800'">
-                    <button
-                        type="button"
-                        class="flex w-full flex-col gap-2 rounded text-left"
-                        :aria-current="selected === index ? 'true' : undefined"
-                        @click="selected = index">
-                        <img
-                            v-if="slideThumbnail(slide)"
-                            :src="slideThumbnail(slide)"
-                            alt=""
-                            class="h-24 w-full rounded object-cover" />
-                        <span
-                            v-else
-                            class="flex h-24 w-full items-center justify-center rounded
-                                   bg-slate-100 text-2xl text-slate-400 dark:bg-slate-700"
-                            aria-hidden="true">
-                            ▧
-                        </span>
-                        <span class="flex w-full items-center gap-2 text-sm">
-                            <span class="shrink-0 font-semibold text-blue-600 dark:text-blue-300">
-                                {{ index + 1 }}.
-                            </span>
-                            <span
-                                class="min-w-0 flex-1 font-medium text-[9px]
-                                       text-slate-800 dark:text-slate-100"
-                                  :title="slide.translations?.[locale]?.title || t('untitled')">
-                                {{ slide.translations?.[locale]?.title || t('untitled') }}
-                            </span>
-                        </span>
-                    </button>
-                    <div class="mt-2 flex items-center justify-center gap-1
-                                border-t border-slate-400 pt-2
-                                dark:border-slate-500">
-                        <button
-                            type="button"
-                            :title="t('delete')"
-                            :aria-label="t('delete')"
-                            class="border border-slate-300 rounded px-2 py-1
-                                   text-sm text-red-600 hover:bg-red-50
-                                   dark:hover:bg-slate-600"
-                            @click="remove(index)">×</button>
-                        <button
-                            type="button"
-                            :disabled="index === 0"
-                            :title="t('moveLeft')"
-                            :aria-label="t('moveLeft')"
-                            class="border border-slate-300 rounded px-2 py-1
-                                   text-sm hover:bg-slate-200 disabled:opacity-30
-                                   dark:hover:bg-slate-600"
-                            @click="move(index, -1)">←</button>
-                        <button
-                            type="button"
-                            :disabled="index === items.length - 1"
-                            :title="t('moveRight')"
-                            :aria-label="t('moveRight')"
-                            class="border border-slate-300 rounded px-2 py-1
-                                   text-sm hover:bg-slate-200 disabled:opacity-30
-                                   dark:hover:bg-slate-600"
-                            @click="move(index, 1)">→</button>
-                    </div>
-                </div>
-            </nav>
             <div
                 v-if="active"
                 class="min-w-0 space-y-5">
-                <div
-                    class="flex flex-wrap items-center justify-between gap-3">
-                    <h3 class="font-semibold">
-                        {{ t('slide') }}
-                        {{ selected + 1 }}
-                        <span
-                            v-if="active.id"
-                            class="text-xs text-slate-500">
-                            #{{ active.id }}
-                        </span>
-                    </h3>
-                    <div class="flex gap-2">
-                        <button
-                            v-for="code in locales"
-                            :key="code"
-                            type="button"
-                            class="rounded border px-3 py-1 text-sm"
-                            :class="locale === code
-                            ? 'border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400'
-                            : 'border-slate-500 dark:border-slate-400 text-slate-600 dark:text-slate-400'"
-                            @click="locale = code">
-                            {{ code.toUpperCase() }}
-                        </button>
-                    </div>
-                </div>
                 <details
+                    id="slider-slide-preview"
                     :open="sections.preview"
                     @toggle="toggleSection('preview', $event)"
                     class="rounded border border-slate-400 bg-white p-3 shadow-sm
@@ -390,22 +353,37 @@ defineExpose({ normalize, serialize })
                     <summary class="cursor-pointer select-none font-semibold">
                         {{ t('slide') }}: {{ t('preview') }}
                     </summary>
+                    <div class="my-3 flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center justify-center gap-2">
+                            <button
+                                v-for="d in ['desktop','mobile']"
+                                :key="d"
+                                type="button"
+                                class="rounded border border-slate-400 px-3 py-1
+                                        uppercase text-sm font-semibold"
+                                :class="device === d ? 'border-blue-500 dark:border-blue-400 text-blue-500 dark:text-blue-400' : ''"
+                                @click="device = d">
+                                {{ d }}
+                            </button>
+                        </div>
+                        <div class="flex flex-wrap gap-2"
+                             aria-label="Languages">
+                            <button
+                                v-for="code in locales"
+                                :key="code"
+                                type="button"
+                                class="rounded border px-3 py-1 text-sm"
+                                :class="locale === code
+                                ? 'border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400'
+                                : 'border-slate-500 dark:border-slate-400 text-slate-600 dark:text-slate-400'"
+                                @click="locale = code">
+                                {{ code.toUpperCase() }}
+                            </button>
+                        </div>
+                    </div>
                     <div class="mt-4">
                         <div class="space-y-3">
-                            <div class="flex items-center justify-center">
-                                <div class="flex gap-2">
-                                    <button
-                                        v-for="d in ['desktop','mobile']"
-                                        :key="d"
-                                        type="button"
-                                        class="rounded border border-slate-400 px-2 py-1
-                                               text-xs font-semibold"
-:class="device === d ? 'border-blue-500 dark:border-blue-400 text-blue-500 dark:text-blue-400' : ''"
-                                        @click="device = d">
-                                        {{ d }}
-                                    </button>
-                                </div>
-                            </div>
+
                             <div class="relative mx-auto min-h-64 overflow-hidden rounded"
                                  :class="device === 'mobile' ? 'max-w-[360px]' : 'w-full'"
                                  :style="{
@@ -479,35 +457,27 @@ defineExpose({ normalize, serialize })
                     </div>
                 </details>
                 <details
+                    id="slider-slide-images"
                     :open="sections.images"
                     @toggle="toggleSection('images', $event)"
                     class="rounded border border-slate-400 bg-white p-3 shadow-sm
                            dark:border-slate-600 dark:bg-slate-800">
-                    <summary
-                        class="cursor-pointer select-none font-semibold">
-                        {{ t('slide') }}: {{ t('images') }} Desktop / Mobile
+                    <summary class="cursor-pointer select-none font-semibold">
+                        {{ t('slides') }} / {{ t('images') }} Desktop / Mobile (автоматически)
+                        <span class="ml-2 text-xs font-normal text-slate-500">
+                            {{ t('slide') }} {{ selected + 1 }} / {{ items.length }}
+                        </span>
                     </summary>
+                    <!-- Навигация по слайдам находится внутри секции изображений. -->
                     <div class="mt-4">
                         <div class="space-y-3">
-                            <p class="text-xs text-slate-500">
-                                {{ t('maximumImagesDesc') }}
-                            </p>
-                            <p class="text-xs text-slate-500">
-                                {{ t('imageDownloadDesc') }}
-                            </p>
-                            <div class="flex flex-wrap items-center justify-end gap-2">
-                                <label
-                                    class="flex items-center gap-1 btn px-3 py-1 bg-cyan-600
-                                           rounded shadow-md text-white text-sm font-semibold
-                                           transition-colors duration-300 ease-in-out
-                                           hover:text-slate-100 focus:text-white
-                                           hover:bg-cyan-700 focus:bg-cyan-700 focus:outline-none">
-                                    + {{ t('downloadImage') }} Desktop
-                                    <input
-                                        class="hidden"
-                                        type="file"
-                                        accept="image/jpeg,image/png,image/webp,image/avif"
-                                        multiple @change="upload" />
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <p class="text-xs text-slate-500">Одно изображение на слайд. Mobile создаётся автоматически из оригинала.</p>
+                                <label class="flex cursor-pointer items-center gap-1 rounded bg-cyan-600 px-3 py-1 text-sm font-semibold text-white hover:bg-cyan-700">
+                                    {{ active.images.length ? 'Заменить изображение' : 'Выбрать изображение' }}
+                                    <input class="sr-only" type="file"
+                                           accept="image/jpeg,image/png,image/webp,image/avif"
+                                           @change="replaceImage" />
                                 </label>
                             </div>
                             <div
@@ -515,16 +485,15 @@ defineExpose({ normalize, serialize })
                                 :key="img.id ?? img._key"
                                 class="p-2 flex items-center gap-3 rounded border
                                        border-dashed border-slate-400 dark:border-slate-600">
+                                <span class="min-w-0 flex-1 truncate text-xs text-end">
+                                    {{ img.file?.name || `${t('image')} #${img.id}` }}
+                                </span>
                                 <img
                                     v-if="imageUrl(img)"
                                     :src="imageUrl(img)"
                                     class="h-16 w-24 rounded object-cover"
                                     alt="" />
-                                <span class="min-w-0 flex-1 truncate text-xs">
-                                {{ img.file?.name || `${t('image')} #${img.id}` }}
-                            </span>
                                 <div
-                                    v-if="img.file"
                                     class="grid min-w-0 flex-1 gap-1">
                                     <input
                                         v-model="img.alt"
@@ -537,24 +506,6 @@ defineExpose({ normalize, serialize })
                                         maxlength="255"
                                         :placeholder="t('caption')" />
                                 </div>
-                                <button
-                                    type="button"
-                                    class="flex items-center gap-1 btn px-2 py-0.5 bg-yellow-200
-                                           rounded-sm shadow-md text-slate-600 text-sm font-semibold
-                                           transition-colors duration-300 ease-in-out
-                                           hover:text-slate-700 focus:text-slate-700
-                                           hover:bg-yellow-300 focus:bg-yellow-300
-                                           focus:outline-none"
-                                    @click="removeImage(index)">
-                                    {{ t('delete') }}
-                                    <svg
-                                        class="w-3 h-3 fill-current text-red-400
-                                               dark:text-red-600 shrink-0"
-                                        viewBox="0 0 16 16">
-                                        <path
-                                            d="M5 7h2v6H5V7zm4 0h2v6H9V7zm3-6v2h4v2h-1v10c0 .6-.4 1-1 1H2c-.6 0-1-.4-1-1V5H0V3h4V1c0-.6.4-1 1-1h6c.6 0 1 .4 1 1zM6 2v1h4V2H6zm7 3H3v9h10V5z" ></path>
-                                    </svg>
-                                </button>
                                 <span
                                     class="text-xs text-red-600">
                                 {{ error(`slides.${selected}.images.${index}.file`) }}
@@ -562,86 +513,99 @@ defineExpose({ normalize, serialize })
                             </div>
                         </div>
                     </div>
-                </details>
-                <details
-                    :open="sections.properties"
-                    @toggle="toggleSection('properties', $event)"
-                    class="rounded border border-slate-400 bg-white p-3 shadow-sm
-                           dark:border-slate-600 dark:bg-slate-800"
-                >
-                    <summary
-                        class="cursor-pointer select-none font-semibold">
-                        {{ t('slide') }}: {{ t('keyParameters') }}
-                    </summary>
                     <div class="mt-4">
-                        <div class="grid gap-3 md:grid-cols-3">
-                            <label class="flex items-center gap-2 text-sm">
-                                <input
-                                    v-model="active.activity"
-                                    type="checkbox" />
-                                {{ t('actively') }}
-                            </label>
-                            <label class="flex items-center gap-2 text-sm">
-                                <input
-                                    v-model="active.is_main"
-                                    type="checkbox" />
-                                {{ t('mainSlide') }}
-                            </label>
-                            <label class="space-y-1 text-sm">
-                                <span class="font-semibold text-blue-700 dark:text-blue-300">
-                                    {{ t('status') }}
-                                </span>
-                                <select
-                                    v-model="active.status"
-                                    :class="cls">
-                                    <option value="draft">{{ t('statusDraft') }}</option>
-                                    <option value="published">{{ t('statusPublished') }}</option>
-                                    <option value="archived">{{ t('statusArchived') }}</option>
-                                </select>
-                            </label>
-                        </div>
-                    </div>
-                </details>
-                <details
-                    :open="sections.publication"
-                    @toggle="toggleSection('publication', $event)"
-                    class="rounded border border-slate-400 bg-white p-3 shadow-sm
-                           dark:border-slate-600 dark:bg-slate-800"
-                >
-                    <summary class="cursor-pointer select-none font-semibold">
-                        {{ t('slide') }}: {{ t('datetime') }}
-                    </summary>
-                    <div class="mt-4">
-                        <div class="grid gap-3 md:grid-cols-3">
-                            <label
-                                v-for="field in [
-                                    {
-                                        key:'published_at',
-                                        label: t('publishedAt')
-                                    },
-                                    {
-                                        key:'show_from_at',
-                                        label: t('show')+' '+t('from')
-                                    },
-                                    {
-                                        key:'show_to_at',
-                                        label: t('show')+' '+t('to')
-                                    }
-                                ]"
-                                :key="field.key"
-                                class="text-sm">
-                                    <span class="font-semibold text-blue-700 dark:text-blue-300">
-                                        {{ field.label }}
+                        <nav
+                            class="flex justify-center w-full max-w-full gap-3 overflow-x-auto pb-3"
+                            :aria-label="t('slides')">
+                            <div
+                                v-for="(slide, index) in items"
+                                :key="slide.id ?? slide._key"
+                                class="flex w-44 shrink-0 flex-col rounded-lg border p-2 transition-colors
+                                       dark:border-slate-600"
+                                :class="selected === index
+                                    ? 'border-blue-500 bg-blue-50 dark:bg-slate-700'
+                                    : slideErrorCount(index) > 0
+                                        ? 'border-red-500 bg-red-50 dark:bg-red-950/20'
+                                        : 'border-slate-500 bg-white dark:bg-slate-800'">
+                                <button
+                                    type="button"
+                                    class="flex w-full flex-col gap-2 rounded text-left"
+                                    :aria-current="selected === index ? 'true' : undefined"
+                                    @click="selected = index">
+                                    <img
+                                        v-if="slideThumbnail(slide)"
+                                        :src="slideThumbnail(slide)"
+                                        alt=""
+                                        class="h-24 w-full rounded object-cover" />
+                                    <span
+                                        v-else
+                                        class="flex h-24 w-full items-center justify-center rounded
+                                               bg-slate-100 text-2xl text-slate-400 dark:bg-slate-700"
+                                        aria-hidden="true">
+                                        ▧
                                     </span>
-                                <input
-                                    v-model="active[field.key]"
-                                    type="datetime-local"
-                                    :class="cls" />
-                            </label>
-                        </div>
+                                    <span class="flex w-full items-center gap-2 text-sm">
+
+                                        <!-- Номер слайда -->
+                                        <span class="shrink-0 font-semibold text-blue-600 dark:text-blue-300">
+                                            {{ index + 1 }}.
+                                        </span>
+
+                                        <!-- Название слайда -->
+                                        <span
+                                            class="min-w-0 flex-1 truncate font-medium text-[9px]
+                                                   text-slate-800 dark:text-slate-100"
+                                            :title="slide.translations?.[locale]?.title || t('untitled')">
+                                            {{ slide.translations?.[locale]?.title || t('untitled') }}
+                                        </span>
+
+                                        <!-- Количество ошибок заполнения -->
+                                        <span
+                                            v-if="slideErrorCount(index) > 0"
+                                            class="shrink-0 rounded-full bg-red-600 px-2 py-0.5
+                                                   text-xs font-semibold text-white"
+                                            :title="`Ошибок заполнения: ${slideErrorCount(index)}`">
+                                            {{ slideErrorCount(index) }}
+                                        </span>
+
+                                    </span>
+                                </button>
+                                <div class="mt-2 flex items-center justify-center gap-1
+                                            border-t border-slate-400 pt-2
+                                            dark:border-slate-500">
+                                    <button
+                                        type="button"
+                                        :title="t('delete')"
+                                        :aria-label="t('delete')"
+                                        class="border border-slate-300 rounded px-2 py-1
+                                               text-sm text-red-600 hover:bg-red-50
+                                               dark:hover:bg-slate-600"
+                                        @click="remove(index)">×</button>
+                                    <button
+                                        type="button"
+                                        :disabled="index === 0"
+                                        :title="t('moveLeft')"
+                                        :aria-label="t('moveLeft')"
+                                        class="border border-slate-300 rounded px-2 py-1
+                                               text-sm hover:bg-slate-200 disabled:opacity-30
+                                               dark:hover:bg-slate-600"
+                                        @click="move(index, -1)">←</button>
+                                    <button
+                                        type="button"
+                                        :disabled="index === items.length - 1"
+                                        :title="t('moveRight')"
+                                        :aria-label="t('moveRight')"
+                                        class="border border-slate-300 rounded px-2 py-1
+                                               text-sm hover:bg-slate-200 disabled:opacity-30
+                                               dark:hover:bg-slate-600"
+                                        @click="move(index, 1)">→</button>
+                                </div>
+                            </div>
+                        </nav>
                     </div>
                 </details>
                 <details
+                    id="slider-slide-translations"
                     :open="sections.translations"
                     @toggle="toggleSection('translations', $event)"
                     class="rounded border border-slate-400 bg-white p-3 shadow-sm
@@ -650,6 +614,19 @@ defineExpose({ normalize, serialize })
                     <summary class="cursor-pointer select-none font-semibold">
                         {{ t('slide') }}: {{ t('translations') }}
                     </summary>
+                    <div class="mt-3 flex flex-wrap items-center justify-end gap-2" aria-label="Languages">
+                        <button
+                            v-for="code in locales"
+                            :key="code"
+                            type="button"
+                            class="rounded border px-3 py-1 text-sm"
+                            :class="locale === code
+                                ? 'border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400'
+                                : 'border-slate-500 dark:border-slate-400 text-slate-600 dark:text-slate-400'"
+                            @click="locale = code">
+                            {{ code.toUpperCase() }}
+                        </button>
+                    </div>
                     <div class="mt-4">
                         <div v-if="translation" class="grid gap-3 md:grid-cols-2">
                             <label class="space-y-1 text-sm">
@@ -703,6 +680,87 @@ defineExpose({ normalize, serialize })
                     </div>
                 </details>
                 <details
+                    id="slider-slide-properties"
+                    :open="sections.properties"
+                    @toggle="toggleSection('properties', $event)"
+                    class="rounded border border-slate-400 bg-white p-3 shadow-sm
+                           dark:border-slate-600 dark:bg-slate-800"
+                >
+                    <summary
+                        class="cursor-pointer select-none font-semibold">
+                        {{ t('slide') }}: {{ t('keyParameters') }}
+                    </summary>
+                    <div class="mt-4">
+                        <div class="grid gap-3 md:grid-cols-3">
+                            <label class="flex items-center gap-2 text-sm">
+                                <input
+                                    v-model="active.activity"
+                                    type="checkbox" />
+                                {{ t('actively') }}
+                            </label>
+                            <label class="flex items-center gap-2 text-sm">
+                                <input
+                                    v-model="active.is_main"
+                                    type="checkbox" />
+                                {{ t('mainSlide') }}
+                            </label>
+                            <label class="space-y-1 text-sm">
+                                <span class="font-semibold text-blue-700 dark:text-blue-300">
+                                    {{ t('status') }}
+                                </span>
+                                <select
+                                    v-model="active.status"
+                                    :class="cls">
+                                    <option value="draft">{{ t('statusDraft') }}</option>
+                                    <option value="published">{{ t('statusPublished') }}</option>
+                                    <option value="archived">{{ t('statusArchived') }}</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                </details>
+                <details
+                    id="slider-slide-publication"
+                    :open="sections.publication"
+                    @toggle="toggleSection('publication', $event)"
+                    class="rounded border border-slate-400 bg-white p-3 shadow-sm
+                           dark:border-slate-600 dark:bg-slate-800"
+                >
+                    <summary class="cursor-pointer select-none font-semibold">
+                        {{ t('slide') }}: {{ t('datetime') }}
+                    </summary>
+                    <div class="mt-4">
+                        <div class="grid gap-3 md:grid-cols-3">
+                            <label
+                                v-for="field in [
+                                    {
+                                        key:'published_at',
+                                        label: t('publishedAt')
+                                    },
+                                    {
+                                        key:'show_from_at',
+                                        label: t('show')+' '+t('from')
+                                    },
+                                    {
+                                        key:'show_to_at',
+                                        label: t('show')+' '+t('to')
+                                    }
+                                ]"
+                                :key="field.key"
+                                class="text-sm">
+                                    <span class="font-semibold text-blue-700 dark:text-blue-300">
+                                        {{ field.label }}
+                                    </span>
+                                <input
+                                    v-model="active[field.key]"
+                                    type="datetime-local"
+                                    :class="cls" />
+                            </label>
+                        </div>
+                    </div>
+                </details>
+                <details
+                    id="slider-slide-appearance"
                     :open="sections.appearance"
                     @toggle="toggleSection('appearance', $event)"
                     class="rounded border border-slate-400 bg-white p-3 shadow-sm
@@ -741,9 +799,7 @@ defineExpose({ normalize, serialize })
                                         ]"
                                         :key="a"
                                         :value="a">
-                                    <span class="font-semibold text-blue-700 dark:text-blue-300">
                                         {{ a }}
-                                    </span>
                                     </option>
                                 </select>
                             </label>
@@ -798,9 +854,7 @@ defineExpose({ normalize, serialize })
                                         ]"
                                         :key="pos"
                                         :value="pos">
-                                    <span class="font-semibold text-blue-700 dark:text-blue-300">
                                         {{ pos }}
-                                    </span>
                                     </option>
                                 </select>
                             </label>
@@ -822,16 +876,16 @@ defineExpose({ normalize, serialize })
                                     label: t('text')
                                 }
                             ]"
-                           :key="field.key"
-                           class="space-y-1 text-sm">
+                                   :key="field.key"
+                                   class="space-y-1 text-sm">
                                 <span class="font-semibold text-blue-700 dark:text-blue-300">
                                    {{ field.label }}
                                 </span>
-                            <input
-                                v-model="active[field.key]"
-                                type="text"
-                                :class="cls"
-                                placeholder="#ffffff" />
+                                <input
+                                    v-model="active[field.key]"
+                                    type="text"
+                                    :class="cls"
+                                    placeholder="#ffffff" />
                             </label>
                             <label class="space-y-1 text-sm">
                                 <span class="font-semibold text-blue-700 dark:text-blue-300">
@@ -856,6 +910,7 @@ defineExpose({ normalize, serialize })
                     </div>
                 </details>
                 <details
+                    id="slider-slide-actions"
                     :open="sections.actions"
                     @toggle="toggleSection('actions', $event)"
                     class="rounded border border-slate-400 bg-white p-3 shadow-sm
@@ -865,19 +920,34 @@ defineExpose({ normalize, serialize })
                         class="cursor-pointer select-none font-semibold">
                         {{ t('slide') }}: {{ t('buttonsAndActions') }}
                     </summary>
-                    <div class="mt-2">
-                        <div class="my-2 flex justify-end">
+
+                    <div class="my-3 flex flex-wrap items-center justify-between gap-2"
+                         aria-label="Languages">
+                        <button
+                            type="button"
+                            class="flex items-center gap-1 btn px-3 py-1 bg-indigo-600
+                                   rounded shadow-md text-white text-sm font-semibold
+                                   transition-colors duration-300 ease-in-out
+                                   hover:text-slate-100 focus:text-white
+                                   hover:bg-indigo-700 focus:bg-indigo-700 focus:outline-none"
+                            @click="addAction">
+                            + {{ t('button') }}
+                        </button>
+                        <div class="flex flex-wrap items-center justify-end gap-2">
                             <button
+                                v-for="code in locales"
+                                :key="code"
                                 type="button"
-                                class="flex items-center gap-1 btn px-3 py-1 bg-indigo-600
-                                           rounded shadow-md text-white text-sm font-semibold
-                                           transition-colors duration-300 ease-in-out
-                                           hover:text-slate-100 focus:text-white
-                                           hover:bg-indigo-700 focus:bg-indigo-700 focus:outline-none"
-                                @click="addAction">
-                                + {{ t('button') }}
+                                class="rounded border px-3 py-1 text-sm"
+                                :class="locale === code
+                                ? 'border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400'
+                                : 'border-slate-500 dark:border-slate-400 text-slate-600 dark:text-slate-400'"
+                                @click="locale = code">
+                                {{ code.toUpperCase() }}
                             </button>
                         </div>
+                    </div>
+                    <div class="mt-3">
                         <div class="space-y-3">
                             <div
                                 v-for="(action, i) in active.actions"
@@ -1056,6 +1126,7 @@ defineExpose({ normalize, serialize })
                     </div>
                 </details>
                 <details
+                    id="slider-slide-advantages"
                     :open="sections.advantages"
                     @toggle="toggleSection('advantages', $event)"
                     class="rounded border border-slate-400 bg-white p-3 shadow-sm
@@ -1064,22 +1135,34 @@ defineExpose({ normalize, serialize })
                     <summary class="cursor-pointer select-none font-semibold">
                         {{ t('slide') }}: {{ t('triggers') }}
                     </summary>
-                    <div class="mt-2">
-                        <div class="my-2 flex justify-end">
-                            <div class="flex justify-end">
-                                <button
-                                    type="button"
-                                    class="flex items-center gap-1 btn px-3 py-1 bg-fuchsia-600
+                    <div class="my-3 flex flex-wrap items-center justify-between gap-2"
+                         aria-label="Languages">
+                        <button
+                            type="button"
+                            class="flex items-center gap-1 btn px-3 py-1 bg-fuchsia-600
                                            rounded shadow-md text-white text-sm font-semibold
                                            transition-colors duration-300 ease-in-out
                                            hover:text-slate-100 focus:text-white
                                            hover:bg-fuchsia-700 focus:bg-fuchsia-700
                                            focus:outline-none"
-                                    @click="addAdvantage">
-                                    + {{ t('add') }} {{ t('trigger') }}
-                                </button>
-                            </div>
+                            @click="addAdvantage">
+                            + {{ t('add') }} {{ t('trigger') }}
+                        </button>
+                        <div class="flex flex-wrap items-center justify-end gap-2">
+                            <button
+                                v-for="code in locales"
+                                :key="code"
+                                type="button"
+                                class="rounded border px-3 py-1 text-sm"
+                                :class="locale === code
+                                ? 'border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400'
+                                : 'border-slate-500 dark:border-slate-400 text-slate-600 dark:text-slate-400'"
+                                @click="locale = code">
+                                {{ code.toUpperCase() }}
+                            </button>
                         </div>
+                    </div>
+                    <div class="mt-3">
                         <div class="space-y-3">
                             <div
                                 v-for="(adv, i) in active.advantages"

@@ -6,7 +6,9 @@ use App\Models\Admin\Slider\SliderSlide\SliderSlide;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -17,10 +19,12 @@ class SliderSlideAction extends Model
     protected $table = 'slider_slide_actions';
 
     protected $fillable = [
-        'slider_slide_id',
+        'moderation_status',
+        'moderated_by',
+        'moderated_at',
+        'moderation_note',
         'sort',
         'activity',
-        'is_primary',
         'action_type',
         'action_value',
         'route_params',
@@ -33,10 +37,11 @@ class SliderSlideAction extends Model
     ];
 
     protected $casts = [
-        'slider_slide_id' => 'integer',
+        'moderation_status' => 'integer',
+        'moderated_by' => 'integer',
+        'moderated_at' => 'datetime',
         'sort' => 'integer',
         'activity' => 'boolean',
-        'is_primary' => 'boolean',
         'route_params' => 'array',
         'settings' => 'array',
         'created_at' => 'datetime',
@@ -47,13 +52,24 @@ class SliderSlideAction extends Model
      | RELATIONS
      ========================================================= */
 
-    /** Слайд, которому принадлежит кнопка */
-    public function slide(): BelongsTo
+    /** Пользователь, выполнивший модерацию. */
+    public function moderator(): BelongsTo
     {
-        return $this->belongsTo(
+        return $this->belongsTo(User::class, 'moderated_by');
+    }
+
+    /** Слайды, использующие кнопку */
+    public function slides(): BelongsToMany
+    {
+        return $this->belongsToMany(
             SliderSlide::class,
+            'slider_slide_has_actions',
+            'slider_slide_action_id',
             'slider_slide_id'
-        );
+        )
+            ->withPivot(['id', 'sort', 'activity', 'is_primary'])
+            ->withTimestamps()
+            ->orderBy('slider_slides.id');
     }
 
     /** Все переводы кнопки */
@@ -111,12 +127,37 @@ class SliderSlideAction extends Model
                 ->firstWhere('locale', $fallback);
         }
 
-        return null;
+        return $this->translations->first();
     }
 
     /* =========================================================
      | BASE SCOPES
      ========================================================= */
+
+    /** Одобренные записи. */
+    public function scopeApproved(Builder $query): Builder
+    {
+        return $query->where('slider_slide_actions.moderation_status', 1);
+    }
+
+    /** Запись ожидает модерации. */
+    public function isPendingModeration(): bool
+    {
+        return (int) $this->moderation_status === 0;
+    }
+
+    /** Запись одобрена. */
+    public function isApproved(): bool
+    {
+        return (int) $this->moderation_status === 1;
+    }
+
+    /** Запись отклонена. */
+    public function isRejected(): bool
+    {
+        return (int) $this->moderation_status === 2;
+    }
+
 
     /** Активные кнопки */
     public function scopeActive(Builder $query): Builder
@@ -130,18 +171,16 @@ class SliderSlideAction extends Model
     /** Основные кнопки */
     public function scopePrimary(Builder $query): Builder
     {
-        return $query->where(
-            'slider_slide_actions.is_primary',
-            true
+        return $query->whereHas('slides', fn (Builder $slideQuery) =>
+        $slideQuery->where('slider_slide_has_actions.is_primary', true)
         );
     }
 
     /** Второстепенные кнопки */
     public function scopeSecondary(Builder $query): Builder
     {
-        return $query->where(
-            'slider_slide_actions.is_primary',
-            false
+        return $query->whereHas('slides', fn (Builder $slideQuery) =>
+        $slideQuery->where('slider_slide_has_actions.is_primary', false)
         );
     }
 
@@ -161,7 +200,7 @@ class SliderSlideAction extends Model
     {
         return $query
             ->orderBy('slider_slide_actions.sort', 'asc')
-            ->orderBy('slider_slide_actions.id', 'asc');
+            ->orderByDesc('slider_slide_actions.id');
     }
 
     /**
@@ -173,7 +212,7 @@ class SliderSlideAction extends Model
      */
     public function scopeForPublic(Builder $query): Builder
     {
-        return $query->active();
+        return $query->active()->approved();
     }
 
     /* =========================================================
@@ -196,11 +235,12 @@ class SliderSlideAction extends Model
 
         return $query->where(
             function (Builder $q) use ($term, $locale) {
-                $q->where(
-                    'slider_slide_actions.action_type',
-                    'like',
-                    "%{$term}%"
-                )
+                $q->where('slider_slide_actions.moderation_note', 'like', "%{$term}%")
+                    ->orWhere(
+                        'slider_slide_actions.action_type',
+                        'like',
+                        "%{$term}%"
+                    )
                     ->orWhere(
                         'slider_slide_actions.action_value',
                         'like',
@@ -273,11 +313,13 @@ class SliderSlideAction extends Model
             /* Порядок */
             'sortAsc' => $query
                 ->orderBy('slider_slide_actions.sort', 'asc')
-                ->orderBy('slider_slide_actions.id', 'asc'),
+                ->orderByDesc('slider_slide_actions.id'),
+
 
             'sortDesc' => $query
                 ->orderBy('slider_slide_actions.sort', 'desc')
                 ->orderByDesc('slider_slide_actions.id'),
+
 
             /* Название кнопки */
             'labelAsc' => $this->applyLabelSort(
@@ -310,6 +352,27 @@ class SliderSlideAction extends Model
                 ->orderBy('slider_slide_actions.action_value', 'desc')
                 ->orderByDesc('slider_slide_actions.id'),
 
+            /* Модерация */
+            'moderationStatusAsc' => $query
+                ->orderBy('slider_slide_actions.moderation_status', 'asc')
+                ->orderByDesc('slider_slide_actions.id'),
+
+            'moderationStatusDesc' => $query
+                ->orderBy('slider_slide_actions.moderation_status', 'desc')
+                ->orderByDesc('slider_slide_actions.id'),
+
+            'moderationPending' => $query
+                ->where('slider_slide_actions.moderation_status', 0)
+                ->orderByDesc('slider_slide_actions.id'),
+
+            'moderationApproved' => $query
+                ->where('slider_slide_actions.moderation_status', 1)
+                ->orderByDesc('slider_slide_actions.id'),
+
+            'moderationRejected' => $query
+                ->where('slider_slide_actions.moderation_status', 2)
+                ->orderByDesc('slider_slide_actions.id'),
+
             /* Активность */
             'activityAsc' => $query
                 ->orderBy('slider_slide_actions.activity', 'asc')
@@ -329,11 +392,11 @@ class SliderSlideAction extends Model
 
             /* Основная кнопка */
             'primary' => $query
-                ->where('slider_slide_actions.is_primary', true)
+                ->primary()
                 ->orderByDesc('slider_slide_actions.id'),
 
             'secondary' => $query
-                ->where('slider_slide_actions.is_primary', false)
+                ->secondary()
                 ->orderByDesc('slider_slide_actions.id'),
 
             /* Дата создания */
@@ -358,29 +421,46 @@ class SliderSlideAction extends Model
         };
     }
 
-    /** Сортировка по тексту кнопки текущего языка */
+    /**
+     * Сортировка по label с учётом текущей и резервной локалей.
+     *
+     * Коррелированные подзапросы не размножают строки основной таблицы.
+     * Результат совместим с paginate() и withCount().
+     */
     private function applyLabelSort(
         Builder $query,
         string $locale,
         string $direction
     ): Builder {
-        return $query
-            ->leftJoin(
-                'slider_slide_action_translations as sort_translations',
-                function ($join) use ($locale) {
-                    $join->on(
-                        'sort_translations.slider_slide_action_id',
-                        '=',
-                        'slider_slide_actions.id'
-                    )->where(
-                        'sort_translations.locale',
-                        '=',
-                        $locale
-                    );
-                }
+        $fallback = config('app.fallback_locale', 'ru');
+
+        $currentLabel = SliderSlideActionTranslation::query()
+            ->select('label')
+            ->whereColumn(
+                'slider_slide_action_translations.slider_slide_action_id',
+                'slider_slide_actions.id'
             )
-            ->addSelect('slider_slide_actions.*')
-            ->orderBy('sort_translations.label', $direction)
-            ->orderByDesc('slider_slide_actions.id');
+            ->where('locale', $locale)
+            ->limit(1);
+
+        $fallbackLabel = SliderSlideActionTranslation::query()
+            ->select('label')
+            ->whereColumn(
+                'slider_slide_action_translations.slider_slide_action_id',
+                'slider_slide_actions.id'
+            )
+            ->where('locale', $fallback)
+            ->limit(1);
+
+        // Встроенные параметры запросов передаются через bindings, не конкатенацией SQL.
+        $sql = 'COALES((' . $currentLabel->toSql() . '), ('
+            . $fallbackLabel->toSql() . '))';
+
+        $query->orderByRaw(
+            $sql . ($direction === 'desc' ? ' DESC' : ' ASC'),
+            array_merge($currentLabel->getBindings(), $fallbackLabel->getBindings())
+        );
+
+        return $query->orderByDesc('slider_slide_actions.id');
     }
 }

@@ -3,170 +3,270 @@
 namespace App\Http\Controllers\Admin\Slider\Slider;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\Slider\Slider\SliderBuilderRequest;
+use App\Http\Requests\Admin\Slider\Slider\SliderRequest;
 use App\Http\Resources\Admin\Slider\Slider\SliderResource;
 use App\Http\Resources\Admin\Slider\Slider\SliderSharedResource;
 use App\Models\Admin\Slider\Slider\Slider;
-use App\Services\Admin\Slider\SliderService;
-use App\Services\Admin\Slider\SliderBuilderService;
+use App\Models\Admin\Slider\SliderSlide\SliderSlide;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
 use App\Traits\Admin\Slider\HasSliderActivityTrait;
 use App\Traits\Admin\Slider\HasSliderAdminCoreTrait;
-use App\Traits\Admin\Slider\HasSliderDeletionTrait;
 use App\Traits\Admin\Slider\HasSliderModerationTrait;
+use App\Traits\Admin\Slider\HasSliderSlidesTrait;
 use App\Traits\Admin\Slider\HasSliderSortingTrait;
+use App\Traits\Admin\Slider\HasSliderTranslationsTrait;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
-/**
- * Административный контроллер слайдеров.
- *
- * Управляет списком, созданием, редактированием и удалением.
- * Активность, сортировка и модерация вынесены в трейты.
- */
 class SliderController extends Controller
 {
     use HasSliderAdminCoreTrait;
     use HasSliderActivityTrait;
     use HasSliderSortingTrait;
     use HasSliderModerationTrait;
-    use HasSliderDeletionTrait;
+    use HasSliderTranslationsTrait;
+    use HasSliderSlidesTrait;
 
-    /** Основная модель слайдера */
     protected string $modelClass = Slider::class;
 
-    /** Сервис создания, обновления и удаления слайдеров */
-    public function __construct(
-        private readonly SliderService $service,
-        private readonly SliderBuilderService $builder
-    ) {
-    }
+    private const TRANSLATION_FIELDS = ['title', 'subtitle', 'description', 'meta_title', 'meta_description'];
+    private const MODERATION_FIELDS = ['moderation_status', 'moderated_by', 'moderated_at', 'moderation_note'];
 
-    /** Список слайдеров: поиск, сортировка и пагинация выполняются во Vue */
     public function index(Request $request): Response
     {
         $locale = $this->resolveLocale($request);
-        $locales = $this->resourceLocales($locale);
-
-        // Настройки административного списка из таблицы settings.
         $settings = app(AdminSettingsService::class);
-
         $perPage = max(1, $settings->int('adminSlidersPerPage', 4));
         $defaultSort = $settings->string('adminSlidersDefaultSort', 'sortAsc');
-
-        // Загружаем переводы, владельца и количество слайдов без N+1.
-        // Связь moderator здесь не нужна: компактный ресурс отдаёт поля модерации.
-        $sliders = $this->baseQuery()
-            ->with([
-                'translations' => fn ($query) => $query->whereIn('locale', $locales),
-                'owner:id,name,email,profile_photo_path',
-                'slides' => fn ($query) => $query->orderBy('sort')->orderBy('id'),
-                'slides.images.media',
-            ])
-            ->withCount('slides')
-            ->ordered()
-            ->get();
+        $sort = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+        $mode = $settings->string('adminSlidersProcessingMode', 'frontend');
+        $count = $this->baseQuery()->count();
+        $server = app(ProcessingModeService::class)->shouldUseServer($mode, $count, 300);
+        $query = $this->indexQuery($locale);
+        $sliders = $server
+            ? $query->search($search, $locale)->sortByParam($sort, $locale)->paginate($perPage)->withQueryString()
+            : $query->ordered()->get();
 
         return Inertia::render('Admin/Slider/Sliders/Index', [
             'sliders' => SliderSharedResource::collection($sliders),
+            'slidersCount' => $count,
             'adminSlidersPerPage' => $perPage,
             'adminSlidersDefaultSort' => $defaultSort,
+            'adminSlidersProcessingMode' => $mode,
+            'useServerProcessing' => $server,
+            'sortParam' => $sort,
+            'search' => $search,
             'currentLocale' => $locale,
             'availableLocales' => $this->availableLocales(),
             'isAdmin' => $this->isAdmin(),
         ]);
     }
 
-    /** Страница создания слайдера */
+    private function indexQuery(string $locale): Builder
+    {
+        return $this->baseQuery()->with([
+            'translations' => fn ($query) => $query->whereIn('locale', $this->resourceLocales($locale)),
+            'owner:id,name,email,profile_photo_path',
+            'slides.images.media',
+        ])->withCount('slides');
+    }
+
     public function create(Request $request): Response
     {
         return Inertia::render('Admin/Slider/Sliders/Create', [
             'currentLocale' => $this->resolveLocale($request),
             'availableLocales' => $this->availableLocales(),
+            'availableSlides' => $this->availableSlides(),
             'isAdmin' => $this->isAdmin(),
         ]);
     }
 
-    /** Создание слайдера через сервис */
-    public function store(SliderBuilderRequest $request): RedirectResponse
+    public function store(SliderRequest $request): RedirectResponse
     {
-        $this->builder->create(
-            $request->validated(),
-            (int) $request->user()->getAuthIdentifier(),
-            $this->isAdmin()
-        );
+        $data = $request->validated();
+        DB::transaction(function () use ($data, $request): void {
+            $attributes = $this->sliderAttributes($data);
+            $attributes['user_id'] = (int) $request->user()->getAuthIdentifier();
+            $this->resetModeration($attributes);
+            $this->applyAdminModeration($attributes, $data, $attributes['user_id']);
+            $this->normalizePublication($attributes);
+            $slider = $this->baseQuery()->create($attributes);
+            $this->syncTranslations($slider, $data['translations'] ?? [], self::TRANSLATION_FIELDS);
+            if (array_key_exists('slides', $data)) {
+                $this->syncSliderSlides($slider, $data['slides']);
+            }
+        });
 
-        return redirect()->route('admin.sliders.index')
-            ->with('success', 'Слайдер успешно создан.');
+        return redirect()->route('admin.sliders.index')->with('success', 'Слайдер успешно создан.');
     }
 
-    /** Страница просмотра слайдера */
     public function show(Request $request, int $slider): Response
     {
         $locale = $this->resolveLocale($request);
-        $model = $this->fullQuery()->findOrFail($slider);
-
         return Inertia::render('Admin/Slider/Sliders/Show', [
-            'slider' => new SliderResource($model),
+            'slider' => new SliderResource($this->fullQuery()->findOrFail($slider)),
             'currentLocale' => $locale,
             'availableLocales' => $this->availableLocales(),
             'isAdmin' => $this->isAdmin(),
         ]);
     }
 
-    /** Страница редактирования слайдера */
     public function edit(Request $request, int $slider): Response
     {
         $locale = $this->resolveLocale($request);
-        $model = $this->fullQuery()->findOrFail($slider);
-
         return Inertia::render('Admin/Slider/Sliders/Edit', [
-            'slider' => new SliderResource($model),
+            'slider' => new SliderResource($this->fullQuery()->findOrFail($slider)),
+            'availableSlides' => $this->availableSlides(),
             'currentLocale' => $locale,
             'availableLocales' => $this->availableLocales(),
             'isAdmin' => $this->isAdmin(),
         ]);
     }
 
-    /** Обновление слайдера через сервис */
-    public function update(SliderBuilderRequest $request, int $slider): RedirectResponse
+    public function update(SliderRequest $request, int $slider): RedirectResponse
     {
-        $model = $this->baseQuery()->findOrFail($slider);
+        $data = $request->validated();
+        DB::transaction(function () use ($slider, $data, $request): void {
+            $model = $this->baseQuery()->lockForUpdate()->findOrFail($slider);
+            $attributes = $this->sliderAttributes($data);
+            $this->normalizePublication($attributes, $model);
+            $model->fill($attributes);
+            $changed = $model->isDirty();
+            $model->save();
 
-        $this->builder->update($model, $request->validated(), $this->isAdmin());
+            if (array_key_exists('translations', $data)) {
+                $before = $model->translations()->get()->mapWithKeys(fn ($item) => [$item->locale => Arr::only($item->getAttributes(), self::TRANSLATION_FIELDS)])->all();
+                $this->syncTranslations($model, $data['translations'], self::TRANSLATION_FIELDS);
+                $after = $model->translations()->get()->mapWithKeys(fn ($item) => [$item->locale => Arr::only($item->getAttributes(), self::TRANSLATION_FIELDS)])->all();
+                $changed = $changed || $before != $after;
+            }
+            if (array_key_exists('slides', $data)) {
+                $changed = $this->syncSliderSlides($model, $data['slides']) || $changed;
+            }
 
-        return redirect()->route('admin.sliders.index')
-            ->with('success', 'Слайдер успешно обновлён.');
+            if ($this->isAdmin()) {
+                $moderation = [];
+                $this->applyAdminModeration($moderation, $data, (int) $request->user()->getAuthIdentifier());
+                if ($moderation !== []) {
+                    $model->forceFill($moderation)->save();
+                }
+            } elseif ($changed) {
+                $moderation = [];
+                $this->resetModeration($moderation);
+                $model->forceFill($moderation)->save();
+            }
+        });
+
+        return redirect()->route('admin.sliders.index')->with('success', 'Слайдер успешно обновлён.');
     }
 
-    /** Удаление слайдера через сервис */
     public function destroy(int $slider): RedirectResponse
     {
-        $model = $this->baseQuery()->findOrFail($slider);
-        $this->service->delete($model);
-
-        return redirect()->route('admin.sliders.index')
-            ->with('success', 'Слайдер удалён.');
+        DB::transaction(function () use ($slider): void {
+            $model = $this->baseQuery()->lockForUpdate()->findOrFail($slider);
+            $this->deleteSlider($model);
+        });
+        return redirect()->route('admin.sliders.index')->with('success', 'Слайдер удалён.');
     }
 
-    /** Полные связи для Show/Edit, включая модератора, без N+1 */
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1', 'max:500'],
+            'ids.*' => ['required', 'integer', 'distinct', 'min:1'],
+        ]);
+        $ids = array_map('intval', $validated['ids']);
+        $deleted = 0;
+        $failed = 0;
+        foreach ($ids as $id) {
+            try {
+                DB::transaction(function () use ($id): void {
+                    $model = $this->baseQuery()->lockForUpdate()->findOrFail($id);
+                    $this->deleteSlider($model);
+                });
+                $deleted++;
+            } catch (Throwable $exception) {
+                $failed++;
+                Log::error('Ошибка удаления слайдера.', ['slider_id' => $id, 'exception' => $exception]);
+            }
+        }
+        return back()->with($failed ? 'error' : 'success', $failed
+            ? "Удалено слайдеров: {$deleted}. Не удалось удалить: {$failed}."
+            : "Успешно удалено слайдеров: {$deleted}.");
+    }
+
+    private function deleteSlider(Slider $slider): void
+    {
+        // Удаляем только размещения; глобальные слайды и их файлы сохраняются.
+        $slider->slides()->detach();
+        $slider->translations()->delete();
+        $slider->delete();
+    }
+
+    private function sliderAttributes(array $data): array
+    {
+        return Arr::except($data, ['translations', 'slides', 'user_id', ...self::MODERATION_FIELDS]);
+    }
+
+    private function resetModeration(array &$attributes): void
+    {
+        $attributes['moderation_status'] = 0;
+        $attributes['moderated_by'] = null;
+        $attributes['moderated_at'] = null;
+        $attributes['moderation_note'] = null;
+    }
+
+    private function applyAdminModeration(array &$attributes, array $data, int $adminId): void
+    {
+        if (! $this->isAdmin() || ! array_key_exists('moderation_status', $data)) {
+            return;
+        }
+        $status = (int) $data['moderation_status'];
+        if ($status === 0) {
+            $this->resetModeration($attributes);
+            return;
+        }
+        $attributes['moderation_status'] = $status;
+        $attributes['moderated_by'] = $adminId;
+        $attributes['moderated_at'] = now();
+        $attributes['moderation_note'] = $data['moderation_note'] ?? null;
+    }
+
+    private function normalizePublication(array &$attributes, ?Slider $slider = null): void
+    {
+        if (($attributes['status'] ?? $slider?->status) === 'published'
+            && empty($attributes['published_at']) && ! $slider?->published_at) {
+            $attributes['published_at'] = now();
+        }
+    }
+
+    private function availableSlides(): Collection|array
+    {
+        return SliderSlide::query()->with('translations')->orderBy('id')->get();
+    }
+
     private function fullQuery(): Builder
     {
-        return $this->baseQuery()
-            ->with([
-                'translations',
-                'owner:id,name,email,profile_photo_path',
-                'moderator:id,name,email,profile_photo_path',
-                'slides.translations',
-                'slides.images.media',
-                'slides.desktopImages.media',
-                'slides.mobileImages.media',
-                'slides.actions.translations',
-                'slides.advantages.translations',
-            ])
-            ->withCount('slides');
+        return $this->baseQuery()->with([
+            'translations',
+            'owner:id,name,email,profile_photo_path',
+            'moderator:id,name,email,profile_photo_path',
+            'slides.translations',
+            'slides.images.media',
+            'slides.desktopImages.media',
+            'slides.mobileImages.media',
+            'slides.actions.translations',
+            'slides.advantages.translations',
+        ])->withCount('slides');
     }
 }

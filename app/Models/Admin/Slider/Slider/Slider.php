@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -148,14 +149,33 @@ class Slider extends Model
     }
 
     /** Слайды слайдера */
-    public function slides(): HasMany
+
+    /**
+     * Слайды, подключённые к слайдеру.
+     *
+     * Связь many-to-many через slider_has_slides.
+     *
+     * Один слайд может использоваться в нескольких слайдерах.
+     * Порядок, локальная активность и роль главного заголовка
+     * определяются индивидуально для каждого размещения.
+     */
+    public function slides(): BelongsToMany
     {
-        return $this->hasMany(
+        return $this->belongsToMany(
             SliderSlide::class,
-            'slider_id'
+            'slider_has_slides',
+            'slider_id',
+            'slider_slide_id'
         )
-            ->orderBy('sort')
-            ->orderBy('id');
+            ->withPivot([
+                'id',
+                'sort',
+                'activity',
+                'is_main',
+            ])
+            ->withTimestamps()
+            ->orderByPivot('sort')
+            ->orderBy('slider_slides.id');
     }
 
     /* =========================================================
@@ -248,7 +268,10 @@ class Slider extends Model
      | SEARCH
      ========================================================= */
 
-    /** Поиск для административного списка */
+    /**
+     * Серверный поиск административного списка.
+     * Frontend-режим фильтрует уже полученную коллекцию в Vue.
+     */
     public function scopeSearch(
         Builder $query,
         ?string $term,
@@ -297,7 +320,11 @@ class Slider extends Model
      | SORTING
      ========================================================= */
 
-    /** Сортировка для административного списка */
+    /**
+     * Серверная сортировка административного списка.
+     * Для slidesAsc/slidesDesc контроллер предварительно вызывает withCount('slides').
+     * В frontend-режиме сортировку выполняет Vue над полной коллекцией.
+     */
     public function scopeSortByParam(
         Builder $query,
         ?string $sort,
@@ -356,6 +383,9 @@ class Slider extends Model
                 ->where('sliders.status', 'archived')
                 ->orderByDesc('sliders.id'),
 
+            'moderationStatusAsc' => $query->orderBy('sliders.moderation_status', 'asc')->orderByDesc('sliders.id'),
+            'moderationStatusDesc' => $query->orderBy('sliders.moderation_status', 'desc')->orderByDesc('sliders.id'),
+
             'moderationPending' => $query
                 ->where('sliders.moderation_status', 0)
                 ->orderByDesc('sliders.id'),
@@ -368,6 +398,9 @@ class Slider extends Model
                 ->where('sliders.moderation_status', 2)
                 ->orderByDesc('sliders.id'),
 
+            'activityAsc' => $query->orderBy('sliders.activity', 'asc')->orderByDesc('sliders.id'),
+            'activityDesc' => $query->orderBy('sliders.activity', 'desc')->orderByDesc('sliders.id'),
+
             'activity' => $query
                 ->where('sliders.activity', true)
                 ->orderByDesc('sliders.id'),
@@ -375,6 +408,9 @@ class Slider extends Model
             'inactive' => $query
                 ->where('sliders.activity', false)
                 ->orderByDesc('sliders.id'),
+
+            'slidesAsc' => $query->orderBy('slides_count', 'asc')->orderByDesc('sliders.id'),
+            'slidesDesc' => $query->orderBy('slides_count', 'desc')->orderByDesc('sliders.id'),
 
             'publishedAtAsc' => $query
                 ->orderBy('sliders.published_at', 'asc')
@@ -426,29 +462,32 @@ class Slider extends Model
         };
     }
 
-    /** Сортировка по названию текущего перевода */
+    /**
+     * Сортировка по названию: текущая локаль → резервная локаль.
+     * JOIN не создаёт дополнительных запросов и не изменяет выбранные поля модели.
+     * Требуется уникальность пары (slider_id, locale) в slider_translations.
+     */
     private function applyTitleSort(
         Builder $query,
         string $locale,
         string $direction
     ): Builder {
+        $fallback = config('app.fallback_locale', 'ru');
+
         return $query
-            ->leftJoin(
-                'slider_translations as sort_translations',
-                function ($join) use ($locale) {
-                    $join->on(
-                        'sort_translations.slider_id',
-                        '=',
-                        'sliders.id'
-                    )->where(
-                        'sort_translations.locale',
-                        '=',
-                        $locale
-                    );
-                }
-            )
+            ->leftJoin('slider_translations as st_current', function ($join) use ($locale) {
+                $join->on('st_current.slider_id', '=', 'sliders.id')
+                    ->where('st_current.locale', '=', $locale);
+            })
+            ->leftJoin('slider_translations as st_fallback', function ($join) use ($fallback) {
+                $join->on('st_fallback.slider_id', '=', 'sliders.id')
+                    ->where('st_fallback.locale', '=', $fallback);
+            })
             ->addSelect('sliders.*')
-            ->orderBy('sort_translations.title', $direction)
+            ->orderByRaw(
+                'COALESCE(st_current.title, st_fallback.title) '
+                . ($direction === 'desc' ? 'DESC' : 'ASC')
+            )
             ->orderByDesc('sliders.id');
     }
 

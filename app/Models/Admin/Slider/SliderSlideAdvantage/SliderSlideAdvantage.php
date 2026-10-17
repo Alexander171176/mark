@@ -6,7 +6,9 @@ use App\Models\Admin\Slider\SliderSlide\SliderSlide;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -17,7 +19,10 @@ class SliderSlideAdvantage extends Model
     protected $table = 'slider_slide_advantages';
 
     protected $fillable = [
-        'slider_slide_id',
+        'moderation_status',
+        'moderated_by',
+        'moderated_at',
+        'moderation_note',
         'sort',
         'activity',
         'icon_type',
@@ -28,7 +33,9 @@ class SliderSlideAdvantage extends Model
     ];
 
     protected $casts = [
-        'slider_slide_id' => 'integer',
+        'moderation_status' => 'integer',
+        'moderated_by' => 'integer',
+        'moderated_at' => 'datetime',
         'sort' => 'integer',
         'activity' => 'boolean',
         'settings' => 'array',
@@ -40,13 +47,24 @@ class SliderSlideAdvantage extends Model
      | RELATIONS
      ========================================================= */
 
-    /** Слайд, которому принадлежит преимущество */
-    public function slide(): BelongsTo
+    /** Пользователь, выполнивший модерацию. */
+    public function moderator(): BelongsTo
     {
-        return $this->belongsTo(
+        return $this->belongsTo(User::class, 'moderated_by');
+    }
+
+    /** Слайды, использующие преимущество */
+    public function slides(): BelongsToMany
+    {
+        return $this->belongsToMany(
             SliderSlide::class,
+            'slider_slide_has_advantages',
+            'slider_slide_advantage_id',
             'slider_slide_id'
-        );
+        )
+            ->withPivot(['id', 'sort', 'activity'])
+            ->withTimestamps()
+            ->orderBy('slider_slides.id');
     }
 
     /** Все переводы преимущества */
@@ -111,6 +129,30 @@ class SliderSlideAdvantage extends Model
      | BASE SCOPES
      ========================================================= */
 
+    /** Одобренные записи. */
+    public function scopeApproved(Builder $query): Builder
+    {
+        return $query->where('slider_slide_advantages.moderation_status', 1);
+    }
+
+    /** Запись ожидает модерации. */
+    public function isPendingModeration(): bool
+    {
+        return (int) $this->moderation_status === 0;
+    }
+
+    /** Запись одобрена. */
+    public function isApproved(): bool
+    {
+        return (int) $this->moderation_status === 1;
+    }
+
+    /** Запись отклонена. */
+    public function isRejected(): bool
+    {
+        return (int) $this->moderation_status === 2;
+    }
+
     /** Активные преимущества */
     public function scopeActive(Builder $query): Builder
     {
@@ -162,7 +204,7 @@ class SliderSlideAdvantage extends Model
     {
         return $query
             ->orderBy('slider_slide_advantages.sort', 'asc')
-            ->orderBy('slider_slide_advantages.id', 'asc');
+            ->orderByDesc('slider_slide_advantages.id');
     }
 
     /**
@@ -174,7 +216,7 @@ class SliderSlideAdvantage extends Model
      */
     public function scopeForPublic(Builder $query): Builder
     {
-        return $query->active();
+        return $query->active()->approved();
     }
 
     /* =========================================================
@@ -197,11 +239,12 @@ class SliderSlideAdvantage extends Model
 
         return $query->where(
             function (Builder $q) use ($term, $locale) {
-                $q->where(
-                    'slider_slide_advantages.icon_type',
-                    'like',
-                    "%{$term}%"
-                )
+                $q->where('slider_slide_advantages.moderation_note', 'like', "%{$term}%")
+                    ->orWhere(
+                        'slider_slide_advantages.icon_type',
+                        'like',
+                        "%{$term}%"
+                    )
                     ->orWhere(
                         'slider_slide_advantages.icon',
                         'like',
@@ -269,11 +312,13 @@ class SliderSlideAdvantage extends Model
             /* Порядок */
             'sortAsc' => $query
                 ->orderBy('slider_slide_advantages.sort', 'asc')
-                ->orderBy('slider_slide_advantages.id', 'asc'),
+                ->orderByDesc('slider_slide_advantages.id'),
+
 
             'sortDesc' => $query
                 ->orderBy('slider_slide_advantages.sort', 'desc')
                 ->orderByDesc('slider_slide_advantages.id'),
+
 
             /* Заголовок преимущества */
             'titleAsc' => $this->applyTitleSort(
@@ -315,7 +360,29 @@ class SliderSlideAdvantage extends Model
                 ->orderBy('slider_slide_advantages.style', 'desc')
                 ->orderByDesc('slider_slide_advantages.id'),
 
+            /* Статус модерации: сортировка, а не фильтрация. */
+            'moderationStatusAsc' => $query
+                ->orderBy('slider_slide_advantages.moderation_status', 'asc')
+                ->orderByDesc('slider_slide_advantages.id'),
+
+            'moderationStatusDesc' => $query
+                ->orderBy('slider_slide_advantages.moderation_status', 'desc')
+                ->orderByDesc('slider_slide_advantages.id'),
+
             /* Активность */
+
+            'moderationPending' => $query
+                ->where('slider_slide_advantages.moderation_status', 0)
+                ->orderByDesc('slider_slide_advantages.id'),
+
+            'moderationApproved' => $query
+                ->where('slider_slide_advantages.moderation_status', 1)
+                ->orderByDesc('slider_slide_advantages.id'),
+
+            'moderationRejected' => $query
+                ->where('slider_slide_advantages.moderation_status', 2)
+                ->orderByDesc('slider_slide_advantages.id'),
+
             'activityAsc' => $query
                 ->orderBy('slider_slide_advantages.activity', 'asc')
                 ->orderByDesc('slider_slide_advantages.id'),
@@ -354,29 +421,38 @@ class SliderSlideAdvantage extends Model
         };
     }
 
-    /** Сортировка по заголовку текущего перевода */
+    /**
+     * Сортировка по заголовку: текущая локаль → fallback.
+     * Коррелированные подзапросы не размножают строки при пагинации.
+     */
     private function applyTitleSort(
         Builder $query,
         string $locale,
         string $direction
     ): Builder {
+        $fallback = config('app.fallback_locale', 'ru');
+        $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
+
+        $currentTitle = SliderSlideAdvantageTranslation::query()
+            ->select('title')
+            ->whereColumn('slider_slide_advantage_id', 'slider_slide_advantages.id')
+            ->where('locale', $locale)
+            ->limit(1);
+
+        $fallbackTitle = SliderSlideAdvantageTranslation::query()
+            ->select('title')
+            ->whereColumn('slider_slide_advantage_id', 'slider_slide_advantages.id')
+            ->where('locale', $fallback)
+            ->limit(1);
+
+        $expression = 'COALESCE((' . $currentTitle->toSql() . '), ('
+            . $fallbackTitle->toSql() . '))';
+
         return $query
-            ->leftJoin(
-                'slider_slide_advantage_translations as sort_translations',
-                function ($join) use ($locale) {
-                    $join->on(
-                        'sort_translations.slider_slide_advantage_id',
-                        '=',
-                        'slider_slide_advantages.id'
-                    )->where(
-                        'sort_translations.locale',
-                        '=',
-                        $locale
-                    );
-                }
-            )
-            ->addSelect('slider_slide_advantages.*')
-            ->orderBy('sort_translations.title', $direction)
+            ->orderByRaw($expression . ' ' . $direction, [
+                ...$currentTitle->getBindings(),
+                ...$fallbackTitle->getBindings(),
+            ])
             ->orderByDesc('slider_slide_advantages.id');
     }
 }

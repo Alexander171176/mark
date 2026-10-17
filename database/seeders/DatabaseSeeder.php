@@ -25,91 +25,91 @@ class DatabaseSeeder extends Seeder
             LocationSeeder::class,
 
             // Блог
-            BlogRubricSeeder::class,
-            BlogTagSeeder::class,
-            BlogArticleSeeder::class,
+//            BlogRubricSeeder::class,
+//            BlogTagSeeder::class,
+//            BlogArticleSeeder::class,
 
             // Мультивалютность
             CurrencySeeder::class,
             CurrencyRateSeeder::class,
 
             // Хештеги
-            SchoolHashtagSeeder::class,
-            SchoolHashtagTranslationSeeder::class,
+//            SchoolHashtagSeeder::class,
+//            SchoolHashtagTranslationSeeder::class,
 
             // Пользователи
             UserSeeder::class,
 
             // Инструкторы
-            SchoolInstructorProfileSeeder::class,
-            SchoolInstructorProfileTranslationSeeder::class,
+//            SchoolInstructorProfileSeeder::class,
+//            SchoolInstructorProfileTranslationSeeder::class,
 
             // Треки
-            SchoolTrackSeeder::class,
-            SchoolTrackTranslationSeeder::class,
+//            SchoolTrackSeeder::class,
+//            SchoolTrackTranslationSeeder::class,
 
             // Курсы
-            SchoolCourseSeeder::class,
-            SchoolCourseTranslationSeeder::class,
+//            SchoolCourseSeeder::class,
+//            SchoolCourseTranslationSeeder::class,
 
             // Модули
-            SchoolModuleSeeder::class,
-            SchoolModuleTranslationSeeder::class,
+//            SchoolModuleSeeder::class,
+//            SchoolModuleTranslationSeeder::class,
 
             // Уроки
-            SchoolLessonSeeder::class,
-            SchoolLessonTranslationSeeder::class,
+//            SchoolLessonSeeder::class,
+//            SchoolLessonTranslationSeeder::class,
 
             // Задания
-            SchoolAssignmentSeeder::class,
-            SchoolAssignmentTranslationSeeder::class,
+//            SchoolAssignmentSeeder::class,
+//            SchoolAssignmentTranslationSeeder::class,
 
             // Потоки
-            SchoolCourseScheduleSeeder::class,
-            SchoolCourseScheduleTranslationSeeder::class,
+//            SchoolCourseScheduleSeeder::class,
+//            SchoolCourseScheduleTranslationSeeder::class,
 
             // Записи
-            SchoolCohortEnrollmentSeeder::class,
+//            SchoolCohortEnrollmentSeeder::class,
 
             // Заказы
-            SchoolOrderSeeder::class,
+//            SchoolOrderSeeder::class,
 
             // Зачисления
-            SchoolEnrollmentSeeder::class,
+//            SchoolEnrollmentSeeder::class,
 
             // Квизы
-            SchoolQuizSeeder::class,
-            SchoolQuizTranslationSeeder::class,
+//            SchoolQuizSeeder::class,
+//            SchoolQuizTranslationSeeder::class,
 
             // Вопросы
-            SchoolQuizQuestionSeeder::class,
-            SchoolQuizQuestionTranslationSeeder::class,
+//            SchoolQuizQuestionSeeder::class,
+//            SchoolQuizQuestionTranslationSeeder::class,
 
             // Ответы
-            SchoolQuizAnswerSeeder::class,
-            SchoolQuizAnswerTranslationSeeder::class,
+//            SchoolQuizAnswerSeeder::class,
+//            SchoolQuizAnswerTranslationSeeder::class,
 
             // Попытки
-            SchoolQuizAttemptSeeder::class,
-            SchoolQuizAttemptItemSeeder::class,
+//            SchoolQuizAttemptSeeder::class,
+//            SchoolQuizAttemptItemSeeder::class,
 
             // Бандлы
-            SchoolBundleSeeder::class,
-            SchoolBundleTranslationSeeder::class,
+//            SchoolBundleSeeder::class,
+//            SchoolBundleTranslationSeeder::class,
 
             // Цены
-            SchoolCoursePriceSeeder::class,
-            SchoolBundlePriceSeeder::class,
+//            SchoolCoursePriceSeeder::class,
+//            SchoolBundlePriceSeeder::class,
 
             // Подписки
-            SchoolSubscriptionPlanSeeder::class,
-            SchoolSubscriptionPlanTranslationSeeder::class,
+//            SchoolSubscriptionPlanSeeder::class,
+//            SchoolSubscriptionPlanTranslationSeeder::class,
 
             // Заказы
-            SchoolOrderItemSeeder::class,
+//            SchoolOrderItemSeeder::class,
 
             // Комментарии
-            CommentsSeeder::class,
+//            CommentsSeeder::class,
 
             // Конструктор страниц
             CmsPageSeeder::class,
@@ -119,8 +119,11 @@ class DatabaseSeeder extends Seeder
             FormFieldSeeder::class,
             FormFieldOptionSeeder::class,
 
-            // Слайдер на главной
-            SliderSeeder::class,
+            // Преимущества для сладов слайдера
+            SliderSlideAdvantageSeeder::class,
+            // Кнопки для сладов слайдера
+            SliderSlideActionSeeder::class,
+//            SliderSeeder::class,
 
             //  Маркет
             MarketCompanySeeder::class, // Фирмы

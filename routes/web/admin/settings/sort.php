@@ -179,6 +179,11 @@ Route::put('/update-sort/sliders',
     [SettingController::class, 'updateAdminSortSliders'])
     ->name('updateAdminSortSliders');
 
+// преимущества слайдов
+Route::put('/update-sort/slider-slide-advantages',
+    [SettingController::class, 'updateAdminSortSliderSlideAdvantages'])
+    ->name('updateAdminSortSliderSlideAdvantages');
+
 // маркет
 Route::put('/update-sort/market-companies',
     [SettingController::class, 'updateAdminSortMarketCompanies'])

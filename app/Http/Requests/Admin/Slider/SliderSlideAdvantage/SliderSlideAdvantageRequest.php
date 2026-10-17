@@ -9,511 +9,201 @@ use Illuminate\Validation\Validator;
 
 class SliderSlideAdvantageRequest extends FormRequest
 {
-    /**
-     * Авторизация запроса.
-     *
-     * Права доступа проверяются через middleware / Policy.
-     * При необходимости здесь можно дополнительно
-     * проверять владельца родительского слайда.
-     */
+    /** Доступ к CRUD проверяется middleware / Policy. */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Подготовка данных перед валидацией.
-     */
+    /** Подготовка глобальных полей. Параметры pivot обрабатывает конструктор. */
     protected function prepareForValidation(): void
     {
         $prepared = [];
 
-        /* =====================================================
-         | СТРОКОВЫЕ ПОЛЯ
-         ===================================================== */
-
-        foreach ([
-                     'icon_type',
-                     'icon',
-                     'icon_color',
-                     'style',
-                 ] as $field) {
+        foreach (['sort', 'moderation_status', 'moderated_by', 'moderated_at'] as $field) {
             if ($this->exists($field)) {
-                $prepared[$field] = $this->normalizeNullableString(
-                    $this->input($field)
-                );
+                $value = $this->input($field);
+                $prepared[$field] = $value === '' ? null : $value;
             }
         }
 
-        /* =====================================================
-         | ЧИСЛОВЫЕ ПОЛЯ
-         ===================================================== */
-
-        foreach ([
-                     'slider_slide_id',
-                     'sort',
-                 ] as $field) {
-            if (! $this->exists($field)) {
-                continue;
+        foreach (['moderation_note', 'icon_type', 'icon', 'icon_color', 'style'] as $field) {
+            if ($this->exists($field)) {
+                $prepared[$field] = $this->normalizeNullableString($this->input($field));
             }
-
-            $value = $this->input($field);
-
-            $prepared[$field] = $value === ''
-                ? null
-                : $value;
         }
 
-        /* =====================================================
-         | ЛОГИЧЕСКИЕ ПОЛЯ
-         ===================================================== */
+        // Глобальные поля сортировки и модерации (не pivot.sort).
+        foreach (['sort', 'moderation_status', 'moderated_by'] as $field) {
+            if ($this->exists($field) && $this->input($field) === '') {
+                $prepared[$field] = null;
+            }
+        }
+
+        if ($this->exists('moderated_at') && $this->input('moderated_at') === '') {
+            $prepared['moderated_at'] = null;
+        }
+
+        if ($this->exists('moderation_note')) {
+            $prepared['moderation_note'] = $this->normalizeNullableString(
+                $this->input('moderation_note')
+            );
+        }
 
         if ($this->exists('activity')) {
             $value = $this->input('activity');
-
-            if (in_array(
-                $value,
-                [true, 1, '1', 'true', 'on', 'yes'],
-                true
-            )) {
+            if (in_array($value, [true, 1, '1', 'true', 'on', 'yes'], true)) {
                 $prepared['activity'] = true;
-            } elseif (in_array(
-                $value,
-                [false, 0, '0', 'false', 'off', 'no'],
-                true
-            )) {
+            } elseif (in_array($value, [false, 0, '0', 'false', 'off', 'no'], true)) {
                 $prepared['activity'] = false;
             }
         }
 
-        /* =====================================================
-         | ПЕРЕВОДЫ
-         ===================================================== */
-
-        if ($this->exists('translations')) {
-            $translations = $this->input('translations');
-
-            if (is_array($translations)) {
-                $preparedTranslations = [];
-
-                foreach ($translations as $locale => $translation) {
-                    if (! is_array($translation)) {
-                        $preparedTranslations[$locale] = $translation;
-                        continue;
-                    }
-
-                    $preparedTranslations[$locale] = [
-                        'title' => $this->normalizeNullableString(
-                            Arr::get($translation, 'title')
-                        ),
-
-                        'text' => $this->normalizeNullableString(
-                            Arr::get($translation, 'text')
-                        ),
-                    ];
+        if ($this->exists('translations') && is_array($this->input('translations'))) {
+            $translations = [];
+            foreach ($this->input('translations') as $locale => $translation) {
+                if (! is_array($translation)) {
+                    $translations[$locale] = $translation;
+                    continue;
                 }
-
-                $prepared['translations'] = $preparedTranslations;
+                $translations[$locale] = array_replace($translation, [
+                    'title' => $this->normalizeNullableString(Arr::get($translation, 'title')),
+                    'text' => $this->normalizeNullableString(Arr::get($translation, 'text')),
+                ]);
             }
+            $prepared['translations'] = $translations;
         }
 
         $this->merge($prepared);
     }
 
-    /**
-     * Правила валидации для создания и обновления.
-     *
-     * Формат переводов:
-     *
-     * translations: {
-     *     ru: { title, text },
-     *     kk: { title, text },
-     *     en: { title, text }
-     * }
-     */
+    /** Полное состояние формы для store и update. */
     public function rules(): array
     {
         return [
-            /* =================================================
-             | РОДИТЕЛЬСКИЙ СЛАЙД
-             ================================================= */
+            'sort' => ['required', 'integer', 'min:0', 'max:4294967295'],
+            'sort' => ['required', 'integer', 'min:0', 'max:4294967295'],
+            'moderation_status' => ['sometimes', 'integer', Rule::in([0, 1, 2])],
+            'moderated_by' => ['nullable', 'integer', Rule::exists('users', 'id')],
+            'moderated_at' => ['nullable', 'date'],
+            'moderation_note' => ['nullable', 'string'],
 
-            'slider_slide_id' => [
-                'required',
-                'integer',
-                Rule::exists('slider_slides', 'id'),
-            ],
-
-            /* =================================================
-             | УПРАВЛЕНИЕ ОТОБРАЖЕНИЕМ
-             ================================================= */
-
-            'sort' => [
-                'required',
-                'integer',
-                'min:0',
-                'max:4294967295',
-            ],
-
-            'activity' => [
-                'required',
-                'boolean',
-            ],
-
-            /* =================================================
-             | ТИП ИКОНКИ
-             ================================================= */
-
-            'icon_type' => [
-                'required',
-                'string',
-                'max:30',
-                Rule::in([
-                    'lucide',
-                    'heroicon',
-                    'class',
-                    'none',
-                ]),
-            ],
-
-            /* =================================================
-             | НАЗВАНИЕ ИКОНКИ
-             ================================================= */
-
-            'icon' => [
-                Rule::requiredIf(
-                    fn () => in_array(
-                        $this->input('icon_type'),
-                        ['lucide', 'heroicon', 'class'],
-                        true
-                    )
-                ),
-                'nullable',
-                'string',
-                'max:100',
-            ],
-
-            /* =================================================
-             | ЦВЕТ ИКОНКИ
-             ================================================= */
-
-            'icon_color' => [
-                'nullable',
-                'string',
-                'max:30',
-            ],
-
-            /* =================================================
-             | ВАРИАНТ ОФОРМЛЕНИЯ
-             ================================================= */
-
-            'style' => [
-                'nullable',
-                'string',
-                'max:50',
-                Rule::in([
-                    'default',
-                    'card',
-                    'compact',
-                    'inline',
-                    'minimal',
-                    'outlined',
-                ]),
-            ],
-
-            /* =================================================
-             | ДОПОЛНИТЕЛЬНЫЕ НАСТРОЙКИ
-             ================================================= */
-
-            'settings' => [
-                'nullable',
-                'array',
-            ],
-
-            /* =================================================
-             | ПЕРЕВОДЫ
-             ================================================= */
-
-            'translations' => [
-                'required',
-                'array',
-                'min:1',
-            ],
-
-            'translations.*' => [
-                'required',
-                'array',
-            ],
-
-            'translations.*.title' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-
-            'translations.*.text' => [
-                'nullable',
-                'string',
-            ],
+            'activity' => ['required', 'boolean'],
+            'moderation_status' => ['sometimes', 'integer', Rule::in([0, 1, 2])],
+            'moderated_by' => ['nullable', 'integer', Rule::exists('users', 'id')],
+            'moderated_at' => ['nullable', 'date'],
+            'moderation_note' => ['nullable', 'string'],
+            'icon_type' => ['required', 'string', 'max:30', Rule::in(['lucide', 'heroicon', 'class', 'none'])],
+            'icon' => [Rule::requiredIf(fn () => in_array($this->input('icon_type'), ['lucide', 'heroicon', 'class'], true)), 'nullable', 'string', 'max:100'],
+            'icon_color' => ['nullable', 'string', 'max:30'],
+            'style' => ['nullable', 'string', 'max:50', Rule::in(['default', 'card', 'compact', 'inline', 'minimal', 'outlined'])],
+            'settings' => ['nullable', 'array'],
+            'translations' => ['required', 'array', 'min:1'],
+            'translations.*' => ['required', 'array:title,text'],
+            'translations.*.title' => ['nullable', 'string', 'max:255'],
+            'translations.*.text' => ['nullable', 'string'],
         ];
     }
 
-    /**
-     * Дополнительные проверки после основной валидации.
-     */
     public function withValidator(Validator $validator): void
     {
-        $validator->after(function (Validator $validator) {
-
-            /* =================================================
-             | ПРОВЕРКА ПЕРЕВОДОВ
-             ================================================= */
-
+        $validator->after(function (Validator $validator): void {
             $translations = $this->input('translations');
-
             if (is_array($translations)) {
                 $availableLocales = $this->availableLocales();
-
                 $hasContent = false;
-
                 foreach ($translations as $locale => $translation) {
-
-                    // Проверяем допустимость языка.
-                    if (! in_array(
-                        (string) $locale,
-                        $availableLocales,
-                        true
-                    )) {
-                        $validator->errors()->add(
-                            "translations.{$locale}",
-                            'Указан неподдерживаемый язык перевода.'
-                        );
-
+                    if (! in_array((string) $locale, $availableLocales, true)) {
+                        $validator->errors()->add('translations.' . $locale, 'Указанный язык не поддерживается приложением.');
                         continue;
                     }
-
-                    if (! is_array($translation)) {
-                        continue;
-                    }
-
-                    $title = $translation['title'] ?? null;
-                    $text = $translation['text'] ?? null;
-
-                    // Достаточно заголовка или описания.
-                    if (filled($title) || filled($text)) {
+                    if (is_array($translation) && (filled($translation['title'] ?? null) || filled($translation['text'] ?? null))) {
                         $hasContent = true;
                     }
                 }
-
                 if (! $hasContent) {
-                    $validator->errors()->add(
-                        'translations',
-                        'Заполните заголовок или описание преимущества хотя бы на одном языке.'
-                    );
+                    $validator->errors()->add('translations', 'Заполните заголовок или описание преимущества хотя бы на одном языке.');
                 }
             }
-
-            /* =================================================
-             | ПРОВЕРКА ИКОНКИ
-             ================================================= */
 
             $iconType = $this->input('icon_type');
             $icon = $this->input('icon');
-
-            // Для типа none иконка не должна передаваться.
             if ($iconType === 'none' && filled($icon)) {
-                $validator->errors()->add(
-                    'icon',
-                    'Для типа none необходимо очистить название иконки.'
-                );
+                $validator->errors()->add('icon', 'Для типа none необходимо очистить название иконки.');
             }
-
-            // Проверяем название иконки Lucide / Heroicon.
-            if (
-                in_array(
-                    $iconType,
-                    ['lucide', 'heroicon'],
-                    true
-                )
-                && is_string($icon)
-                && $icon !== ''
-            ) {
-                if (! preg_match(
-                    '/^[a-zA-Z][a-zA-Z0-9_-]*$/',
-                    $icon
-                )) {
-                    $validator->errors()->add(
-                        'icon',
-                        'Название иконки может содержать латинские буквы, цифры, дефисы и подчёркивания.'
-                    );
-                }
+            if (in_array($iconType, ['lucide', 'heroicon'], true) && is_string($icon) && $icon !== '' && ! preg_match('/^[a-zA-Z][a-zA-Z0-9_-]*$/', $icon)) {
+                $validator->errors()->add('icon', 'Название иконки может содержать латинские буквы, цифры, дефисы и подчёркивания.');
             }
-
-            /* =================================================
-             | ПРОВЕРКА CSS-КЛАССА ИКОНКИ
-             ================================================= */
-
-            if (
-                $iconType === 'class'
-                && is_string($icon)
-                && $icon !== ''
-            ) {
-                if (! preg_match(
-                    '/^[a-zA-Z0-9_\-: ]+$/',
-                    $icon
-                )) {
-                    $validator->errors()->add(
-                        'icon',
-                        'CSS-класс иконки содержит недопустимые символы.'
-                    );
-                }
+            if ($iconType === 'class' && is_string($icon) && $icon !== '' && ! preg_match('/^[a-zA-Z0-9_\\-: ]+$/', $icon)) {
+                $validator->errors()->add('icon', 'CSS-класс иконки содержит недопустимые символы.');
             }
-
-            /* =================================================
-             | ПРОВЕРКА ЦВЕТА ИКОНКИ
-             ================================================= */
-
             $iconColor = $this->input('icon_color');
-
-            if (
-                is_string($iconColor)
-                && $iconColor !== ''
-                && ! preg_match(
-                    '/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/',
-                    $iconColor
-                )
-            ) {
-                $validator->errors()->add(
-                    'icon_color',
-                    'Укажите цвет в HEX-формате, например #FFFFFF или #2563EB.'
-                );
+            if (is_string($iconColor) && $iconColor !== '' && ! preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/', $iconColor)) {
+                $validator->errors()->add('icon_color', 'Укажите цвет в HEX-формате, например #FFFFFF или #2563EB.');
             }
         });
     }
 
-    /**
-     * Список поддерживаемых языков.
-     *
-     * При необходимости заменяем источник языков
-     * на существующий конфиг приложения.
-     */
+    /** @return array<int, string> */
     protected function availableLocales(): array
     {
-        $locales = config(
-            'app.available_locales',
-            ['ru', 'kk', 'en']
-        );
-
-        return array_values(array_unique(
-            array_filter(
-                (array) $locales,
-                'is_string'
-            )
-        ));
+        $locales = config('app.available_locales', []);
+        return array_values(array_unique(array_filter(
+            is_array($locales) ? $locales : [],
+            fn (mixed $locale): bool => is_string($locale) && $locale !== ''
+        )));
     }
 
-    /**
-     * Сообщения об ошибках.
-     */
     public function messages(): array
     {
         return [
-            /* Родительский слайд */
-            'slider_slide_id.required' =>
-                'Необходимо выбрать слайд.',
+            'sort.required' => 'Необходимо указать порядок сортировки.',
+            'sort.integer' => 'Порядок сортировки должен быть целым числом.',
+            'sort.min' => 'Порядок сортировки не может быть отрицательным.',
+            'sort.max' => 'Порядок сортировки превышает допустимое значение.',
+            'moderation_status.integer' => 'Статус модерации должен быть целым числом.',
+            'moderation_status.in' => 'Недопустимый статус модерации.',
+            'moderated_by.integer' => 'Идентификатор модератора должен быть целым числом.',
+            'moderated_by.exists' => 'Указанный модератор не найден.',
+            'moderated_at.date' => 'Дата модерации имеет неверный формат.',
+            'moderation_note.string' => 'Комментарий модератора должен быть текстом.',
 
-            'slider_slide_id.integer' =>
-                'Некорректный идентификатор слайда.',
-
-            'slider_slide_id.exists' =>
-                'Указанный слайд не найден.',
-
-            /* Сортировка */
-            'sort.required' =>
-                'Необходимо указать порядок сортировки.',
-
-            'sort.integer' =>
-                'Порядок сортировки должен быть целым числом.',
-
-            'sort.min' =>
-                'Порядок сортировки не может быть отрицательным.',
-
-            'sort.max' =>
-                'Превышено максимально допустимое значение сортировки.',
-
-            /* Активность */
-            'activity.required' =>
-                'Необходимо указать активность преимущества.',
-
-            'activity.boolean' =>
-                'Некорректное значение активности.',
-
-            /* Тип иконки */
-            'icon_type.required' =>
-                'Необходимо выбрать тип иконки.',
-
-            'icon_type.in' =>
-                'Недопустимый тип иконки.',
-
-            /* Иконка */
-            'icon.required' =>
-                'Укажите название иконки или CSS-класс.',
-
-            'icon.max' =>
-                'Название иконки не должно превышать 100 символов.',
-
-            /* Цвет */
-            'icon_color.max' =>
-                'Значение цвета не должно превышать 30 символов.',
-
-            /* Стиль */
-            'style.in' =>
-                'Недопустимый вариант оформления преимущества.',
-
-            'style.max' =>
-                'Название стиля не должно превышать 50 символов.',
-
-            /* Настройки */
-            'settings.array' =>
-                'Дополнительные настройки должны быть массивом.',
-
-            /* Переводы */
-            'translations.required' =>
-                'Необходимо добавить переводы преимущества.',
-
-            'translations.array' =>
-                'Переводы должны быть массивом.',
-
-            'translations.min' =>
-                'Необходимо указать хотя бы один язык.',
-
-            'translations.*.title.max' =>
-                'Заголовок преимущества не должен превышать 255 символов.',
-
-            'translations.*.title.string' =>
-                'Заголовок преимущества должен быть строкой.',
-
-            'translations.*.text.string' =>
-                'Описание преимущества должно быть строкой.',
+            'sort.required' => 'Укажите глобальный порядок сортировки.',
+            'sort.integer' => 'Порядок сортировки должен быть целым числом.',
+            'sort.min' => 'Порядок сортировки не может быть отрицательным.',
+            'sort.max' => 'Превышено максимальное значение сортировки.',
+            'moderation_status.in' => 'Недопустимый статус модерации.',
+            'moderated_by.integer' => 'Идентификатор модератора должен быть целым числом.',
+            'moderated_by.exists' => 'Указанный модератор не найден.',
+            'moderated_at.date' => 'Дата модерации имеет неверный формат.',
+            'moderation_note.string' => 'Комментарий модератора должен быть текстом.',
+            'activity.required' => 'Необходимо указать активность преимущества.',
+            'activity.boolean' => 'Некорректное значение активности.',
+            'icon_type.required' => 'Необходимо выбрать тип иконки.',
+            'icon_type.in' => 'Недопустимый тип иконки.',
+            'icon.required' => 'Укажите название иконки или CSS-класс.',
+            'icon.max' => 'Название иконки не должно превышать 100 символов.',
+            'icon_color.max' => 'Значение цвета не должно превышать 30 символов.',
+            'style.in' => 'Недопустимый вариант оформления преимущества.',
+            'style.max' => 'Название стиля не должно превышать 50 символов.',
+            'settings.array' => 'Дополнительные настройки должны быть массивом.',
+            'translations.required' => 'Необходимо добавить переводы преимущества.',
+            'translations.array' => 'Переводы должны быть массивом.',
+            'translations.min' => 'Необходимо указать хотя бы один язык.',
+            'translations.*.array' => 'Каждый перевод должен содержать только поля title и text.',
+            'translations.*.title.max' => 'Заголовок преимущества не должен превышать 255 символов.',
+            'translations.*.title.string' => 'Заголовок преимущества должен быть строкой.',
+            'translations.*.text.string' => 'Описание преимущества должно быть строкой.',
         ];
     }
 
-    /**
-     * Нормализация необязательных строк.
-     */
-    protected function normalizeNullableString(
-        mixed $value
-    ): mixed {
-        if ($value === null) {
-            return null;
-        }
-
-        if (! is_string($value)) {
+    /** Пустые строки преобразуем в null, неверные типы не скрываем. */
+    protected function normalizeNullableString(mixed $value): mixed
+    {
+        if ($value === null || ! is_string($value)) {
             return $value;
         }
-
         $value = trim($value);
-
         return $value === '' ? null : $value;
     }
 }

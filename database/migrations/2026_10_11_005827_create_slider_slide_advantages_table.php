@@ -1,4 +1,3 @@
-
 <?php
 
 use Illuminate\Database\Migrations\Migration;
@@ -10,47 +9,50 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('slider_slide_advantages', function (Blueprint $table) {
-
-            // Основные данные преимущества.
+            // Основные данные самостоятельного преимущества.
             $table->id(); // Уникальный идентификатор преимущества.
-
-            $table->foreignId('slider_slide_id')
-                ->constrained('slider_slides')
-                ->cascadeOnDelete(); // Слайд, которому принадлежит преимущество.
-
-            // Управление отображением.
-            $table->unsignedInteger('sort')
-                ->default(0); // Порядок преимущества внутри слайда (Drag & Drop).
-
-            $table->boolean('activity')
-                ->default(true); // Активность преимущества: показывать или скрывать.
+            $table->boolean('activity')->default(true); // Глобальная активность во всех слайдах.
 
             // Настройки иконки.
-            $table->string('icon_type', 30)
-                ->default('lucide'); // Тип иконки: lucide, heroicon, class, none.
+            $table->string('icon_type', 30)->default('lucide'); // lucide, heroicon, class, none.
+            $table->string('icon', 100)->nullable(); // Название иконки или CSS-класс.
+            $table->string('icon_color', 30)->nullable(); // Индивидуальный цвет иконки.
+            $table->string('style', 50)->nullable(); // default, card, compact и другие.
+            $table->json('settings')->nullable(); // Расширенные параметры оформления преимущества.
 
-            $table->string('icon', 100)
-                ->nullable(); // Название иконки или CSS-класс.
+            // Модерация преимущества.
+            $table->unsignedTinyInteger('moderation_status')
+                ->default(0)
+                ->index('slider_slide_advantages_moderation_status_idx')
+                ->comment('Модерация: 0=pending, 1=approved, 2=rejected');
 
-            $table->string('icon_color', 30)
-                ->nullable(); // Индивидуальный цвет иконки.
+            $table->unsignedBigInteger('moderated_by')
+                ->nullable()
+                ->index('slider_slide_advantages_moderated_by_idx')
+                ->comment('Модератор (users.id)');
 
-            // Внешний вид преимущества.
-            $table->string('style', 50)
-                ->nullable(); // Вариант оформления: default, card, compact и другие.
+            $table->foreign('moderated_by', 'slider_slide_advantages_moderated_by_fk')
+                ->references('id')
+                ->on('users')
+                ->nullOnDelete();
 
-            // Дополнительные настройки.
-            $table->json('settings')
-                ->nullable(); // Расширенные параметры оформления преимущества.
+            $table->timestamp('moderated_at')
+                ->nullable()
+                ->index('slider_slide_advantages_moderated_at_idx')
+                ->comment('Дата модерации');
+
+            $table->text('moderation_note')
+                ->nullable()
+                ->comment('Комментарий модератора');
+
+            $table->unsignedInteger('sort')->default(0); // Глобальный порядок сортировки в админке.
 
             // Системные поля.
             $table->timestamps(); // Даты создания и последнего изменения.
 
             // Индексы.
-            $table->index(
-                ['slider_slide_id', 'sort', 'id'],
-                'slider_slide_advantages_order_idx'
-            ); // Быстрая сортировка преимуществ внутри слайда.
+            $table->index(['activity', 'moderation_status'], 'slider_slide_advantages_public_idx');
+            $table->index(['sort', 'id'], 'slider_slide_advantages_sort_idx');
         });
     }
 

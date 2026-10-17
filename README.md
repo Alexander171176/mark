@@ -60,6 +60,8 @@ docker exec mark-redis redis-cli LLEN queues:emails
 docker exec mark-php-app php artisan queue:failed
 ```
 
+docker exec mark-php-app php artisan migrate:rollback
+
 ---
 
 ## Этапы разработки — исходная последовательность
@@ -1974,44 +1976,80 @@ Event → Listener → RecipientResolver → SendNotificationEmailJob → Redis 
 
 ## Этап 22. Конструктор слайдеров и анимации
 
-> **Статус:** план разработки. Команды `make:*` приведены для последовательного создания файлов; не запускать повторно для уже существующих классов. Миграции восьми таблиц ранее подготовлены отдельно — не создавать дублирующие миграции через `-m`.
+> **Статус на 16.10.2026:** первоначальный вложенный CRUD слайдеров реализован и работает. Принято решение о **рефакторинге**: самостоятельные CRUD для слайдов, Actions (кнопок) и преимуществ; в CRUD слайдера — выбор готовых слайдов. Приведённые ниже `make:*` — история/памятка, **не список команд для повторного запуска**. Изменения БД и кода по новой архитектуре пока не считать реализованными.
 
-### 1. Модели слайдеров и переводов
+### 1. Назначение и границы модуля
 
-```bash
-# Слайдеры
+- Слайдер — настраиваемая композиция слайдов (Swiper, публикация, анимации, навигация).
+- Слайды, Actions и преимущества создаются и редактируются в **отдельных административных CRUD**, а затем связываются с другими элементами конструктора.
+- Готовые элементы можно использовать повторно **без создания копий**.
+- **Решение:** слайды, Actions и преимущества **не выводятся самостоятельно в публичной части вне системы слайдеров**. Это не универсальный Page Builder.
+- Публичная часть отображает слайдер и его связанные элементы; функциональность URL, route, form и anchor должна сохраниться.
+
+### 2. Архитектура связей (целевая, запланирована)
+
+| Сущности | Отношение | Промежуточная таблица |
+|---|---|---|
+| `sliders` ↔ `slider_slides` | many-to-many | `slider_has_slides` |
+| `slider_slides` ↔ `slider_slide_actions` | many-to-many | `slider_slide_has_actions` |
+| `slider_slides` ↔ `slider_slide_advantages` | many-to-many | `slider_slide_has_advantages` |
+| `slider_slides` ↔ `slider_slide_images` | many-to-many, уже есть | `slider_slide_has_images` |
+
+- В целевой схеме слайд может существовать без слайдера, а Action/преимущество — без слайда, чтобы их можно было подготовить заранее в админке.
+- `sort`, локальная `activity`, а также зависящие от размещения признаки (`is_main`, `is_primary`, если они применимы) рассматриваются как поля связей; окончательный перечень определить по существующим миграциям и бизнес-логике.
+- Переводы, содержание, оформление и собственные статусы элементов остаются в основных таблицах.
+- Отключение элемента от родителя удаляет **только связь**, а не сам повторно используемый элемент.
+- Изменение общего элемента отражается во всех местах его использования; перед удалением нужно проверять зависимости.
+- Названия таблиц выше — согласованное рабочее направление, точный набор полей/ограничений утверждается при редактировании исходных миграций.
+
+### 3. Модели (история создания существующего модуля)
+
+# 1. Слайдер и переводы
 docker exec mark-php-app php artisan make:model Admin/Slider/Slider/Slider -mfs
 docker exec mark-php-app php artisan make:model Admin/Slider/Slider/SliderTranslation -m
 
-# Слайды
+# 2. Слайд и переводы
 docker exec mark-php-app php artisan make:model Admin/Slider/SliderSlide/SliderSlide -m
 docker exec mark-php-app php artisan make:model Admin/Slider/SliderSlide/SliderSlideTranslation -m
 
-# Модель изображения слайда и миграция
-docker exec mark-php-app php artisan make:model Admin/Slider/SliderSlide/SliderSlideImage -m
-
-# Связующая таблица слайда и изображений
-docker exec mark-php-app php artisan make:migration create_slider_slide_has_images_table --create=slider_slide_has_images
-
-# Кнопки слайдов
+# 3. Actions (кнопки) и переводы
 docker exec mark-php-app php artisan make:model Admin/Slider/SliderSlideAction/SliderSlideAction -m
 docker exec mark-php-app php artisan make:model Admin/Slider/SliderSlideAction/SliderSlideActionTranslation -m
 
-# Преимущества слайдов
+# 4. Преимущества и переводы
 docker exec mark-php-app php artisan make:model Admin/Slider/SliderSlideAdvantage/SliderSlideAdvantage -m
 docker exec mark-php-app php artisan make:model Admin/Slider/SliderSlideAdvantage/SliderSlideAdvantageTranslation -m
-```
 
-### 2. Миграции (уже подготовленные файлы)
+# 5. Изображения слайдов
+docker exec mark-php-app php artisan make:model Admin/Slider/SliderSlide/SliderSlideImage -m
 
-Таблицы: `sliders`, `slider_translations`, `slider_slides`, `slider_slide_translations`, `slider_slide_actions`, `slider_slide_action_translations`, `slider_slide_advantages`, `slider_slide_advantage_translations`.
+# 6. Связь слайдеров и слайдов
+docker exec mark-php-app php artisan make:migration create_slider_has_slides_table --create=slider_has_slides
+
+# 7. Связь слайдов и Actions (кнопок)
+docker exec mark-php-app php artisan make:migration create_slider_slide_has_actions_table --create=slider_slide_has_actions
+
+# 8. Связь слайдов и преимуществ
+docker exec mark-php-app php artisan make:migration create_slider_slide_has_advantages_table --create=slider_slide_has_advantages
+
+# 9. Связь слайдов и изображений
+docker exec mark-php-app php artisan make:migration create_slider_slide_has_images_table --create=slider_slide_has_images
+
+### 4. Миграции: план рефакторинга
+
+Основные таблицы: `sliders`, `slider_translations`, `slider_slides`, `slider_slide_translations`, `slider_slide_images`, `slider_slide_has_images`, `slider_slide_actions`, `slider_slide_action_translations`, `slider_slide_advantages`, `slider_slide_advantage_translations`.
+
+План: **после резервной копии и проверки зависимостей** пересмотреть исходные миграции модуля, добавить три pivot-таблицы, убрать прямое владение (`slider_id` у слайда и `slider_slide_id` у Action/преимущества) в целевой схеме. Не менять миграции других модулей. Если данные необходимо сохранить — вместо разрушительного пересоздания выполнить миграцию данных.
+
+**Не применять автоматически** `migrate:fresh` и `migrate:rollback`: первая команда удаляет все таблицы подключения, вторая откатывает пакет миграций, а не выбранную сущность. Прежде чем откатывать, проверить `migrate:status`, порядок миграций, внешние ключи и данные MediaLibrary.
 
 ```bash
 docker exec mark-php-app php artisan migrate:status
-docker exec mark-php-app php artisan migrate
+# После согласования и подготовки миграций:
+# docker exec mark-php-app php artisan migrate
 ```
 
-### 3. API Resources
+### 5. API Resources (история создания)
 
 ```bash
 docker exec mark-php-app php artisan make:resource Admin/Slider/Slider/SliderResource
@@ -2020,16 +2058,19 @@ docker exec mark-php-app php artisan make:resource Admin/Slider/Slider/SliderTra
 docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlide/SliderSlideResource
 docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlide/SliderSlideSharedResource
 docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlide/SliderSlideTranslationResource
-# Ресурс изображения слайда
 docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlide/SliderSlideImageResource
 docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlideAction/SliderSlideActionResource
+docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlideAction/SliderSlideActionSharedResource
 docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlideAction/SliderSlideActionTranslationResource
 docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlideAdvantage/SliderSlideAdvantageResource
+docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlideAdvantage/SliderSlideAdvantageSharedResource
 docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlideAdvantage/SliderSlideAdvantageTranslationResource
 docker exec mark-php-app php artisan make:resource Public/Slider/SliderResource
 ```
 
-### 4. Form Requests
+Рефакторинг: адаптировать ресурсы под `belongsToMany`, данные pivot, самостоятельные формы редактирования и публичную загрузку слайдера.
+
+### 6. Form Requests (история создания)
 
 ```bash
 docker exec mark-php-app php artisan make:request Admin/Slider/Slider/SliderRequest
@@ -2038,7 +2079,9 @@ docker exec mark-php-app php artisan make:request Admin/Slider/SliderSlideAction
 docker exec mark-php-app php artisan make:request Admin/Slider/SliderSlideAdvantage/SliderSlideAdvantageRequest
 ```
 
-### 5. Контроллеры
+Рефакторинг: убрать обязательную принадлежность элемента родителю при создании, но сохранить валидацию переводов, типов действий, изображений и настроек.
+
+### 7. Контроллеры (история создания / перечень целевых CRUD)
 
 ```bash
 docker exec mark-php-app php artisan make:controller Admin/Slider/Slider/SliderController --resource
@@ -2049,34 +2092,47 @@ docker exec mark-php-app php artisan make:controller Admin/Slider/SliderSlide/Sl
 docker exec mark-php-app php artisan make:controller Public/Slider/SliderPublicController
 ```
 
-### 6. Сервисы
+> Команды отражают ранее записанный план/историю. Наличие строки не подтверждает существование соответствующего контроллера; перед созданием проверить проект.
+
+### 8. Сервисы и сидеры
 
 ```bash
+# Исторические команды
 docker exec mark-php-app php artisan make:class Services/Admin/Slider/SliderService
 docker exec mark-php-app php artisan make:class Services/Public/Slider/SliderResolverService
-```
-
-### 7. Сидер демонстрационного слайдера
-
-```bash
+docker exec mark-php-app php artisan make:seeder SliderSlideAdvantageSeeder
+docker exec mark-php-app php artisan make:seeder SliderSlideActionSeeder
+docker exec mark-php-app php artisan make:seeder SliderSlideSeeder
 docker exec mark-php-app php artisan make:seeder SliderSeeder
-# Запускать после реализации сидера:
+# Запускать сидер только после проверки актуальной реализации:
+# docker exec mark-php-app php artisan db:seed --class=SliderSlideAdvantageSeeder
+# docker exec mark-php-app php artisan db:seed --class=SliderSlideActionSeeder
+# docker exec mark-php-app php artisan db:seed --class=SliderSlideSeeder
 # docker exec mark-php-app php artisan db:seed --class=SliderSeeder
 ```
 
-### 8. Frontend (план)
+В текущей реализации присутствует сложная вложенная синхронизация через `SliderBuilderService` и работа с изображениями через `SliderImageLifecycleService`. При рефакторинге разделить сохранение самостоятельных элементов и синхронизацию pivot-связей; старую логику не удалять до проверки нового CRUD. Сидер должен создавать сущности и связи в соответствии с новой схемой.
 
-- Админка: `Index.vue`, `Create.vue`, `Edit.vue`, редактор слайдов, кнопок, преимуществ и переводов.
-- Drag & Drop: изменение порядка `slider_slides.sort` с сохранением через `SliderSlideSortController`; библиотека `vue-draggable-next` уже указана в зависимостях проекта.
-- Настройки Swiper: autoplay, speed, loop, navigation, pagination, keyboard, touch, breakpoints.
-- **Анимация переходов:** тип перехода (`slide`, `fade`, `cube`, `coverflow`, `flip` — только при поддержке используемой версии Swiper), скорость, easing/дополнительные настройки там, где реализуемы.
-- **Анимация содержимого:** отдельно для маркера, заголовка, акцентного текста, описания, кнопок и преимуществ; тип (`none`, `fade`, `slide-up`, `slide-down`, `zoom`), задержка, длительность, последовательность и повтор при смене активного слайда.
-- **Хранение настроек анимации:** согласовать поля/JSON в `sliders` и `slider_slides` **до применения миграций**. Настройки Swiper и анимации содержимого разделять; неизвестные значения проверять на сервере по разрешённым спискам.
-- Медиа: использовать существующий механизм Spatie Media Library; не создавать отдельное файловое хранилище.
-- Публичный компонент: загружать слайдер по уникальному `code` на главной, в маркетплейсе, школе и блоге; сохранить действия `route`, `form`, `url`, `anchor`.
-- Семантика: только главный заголовок страницы использует `h1`; для остальных слайдов — `h2`.
+### 9. Frontend: текущее состояние и целевой интерфейс
 
-### 9. Проверка после реализации
+- **Сейчас:** вложенный конструктор в админке (`SliderForm.vue`, `SliderSlideBuilder.vue`) позволяет редактировать всё дерево слайдера, включая изображения, Actions, преимущества, переводы и анимации.
+- **После рефакторинга:** отдельные Index/Create/Edit/Show для слайдов, Actions и преимуществ. В CRUD слайдера — выбор и сортировка готовых слайдов; в CRUD слайда — выбор готовых Actions и преимуществ.
+- Сохранить настройки Swiper: autoplay, speed, loop, navigation, pagination, keyboard, touch, breakpoints и поддерживаемые эффекты.
+- Сохранить настройки анимации содержимого, адаптивные изображения Desktop/Mobile, локализации, статусы, публикацию и модерацию.
+- Медиа: использовать существующий механизм Spatie MediaLibrary, не создавать второе файловое хранилище.
+- Публичный вывод — **только слайдер**, по предусмотренному контракту данных; отдельные публичные страницы слайдов, кнопок и преимуществ не создавать.
+- Семантика заголовков: `h1` — только главный заголовок страницы; прочие заголовки слайдов — по контексту (`h2` и т. д.).
+
+### 10. Последовательность работ и проверки
+
+1. Согласовать окончательные поля pivot-таблиц, внешние ключи, индексы, сортировку и правила удаления.
+2. Определить безопасный способ отката/пересоздания **только** таблиц модуля слайдеров; сделать резервную копию данных и медиа.
+3. Исправить миграции, затем модели и отношения Eloquent.
+4. Исправить API Resources и Form Requests.
+5. Адаптировать сидер, сервисы и контроллеры; реализовать отдельные CRUD Actions, преимуществ и слайдов.
+6. Упростить CRUD слайдера до выбора готовых слайдов и их сортировки.
+7. Адаптировать публичный слайдер и проверить поведение всех типов действий и изображений.
+8. После успешных тестов удалить устаревшие зависимости и вложенную логику сохранения.
 
 ```bash
 docker exec mark-php-app php artisan migrate:status
@@ -2084,7 +2140,9 @@ docker exec mark-php-app php artisan route:list
 docker exec mark-php-app php artisan optimize:clear
 ```
 
-> **Важно:** наличие команды в README не означает, что соответствующий файл или функциональность уже реализованы.
+**Контрольные сценарии:** одна кнопка в нескольких слайдах; одно преимущество в нескольких слайдах; один слайд в нескольких слайдерах; изменение общего элемента; отсоединение без удаления; удаление с проверкой зависимостей; сортировка отдельно в каждом родителе; переводы; Desktop/Mobile-изображения; корректность публичного отображения.
+
+---
 
 ## Ближайшие задачи (не реализованы в этом README)
 

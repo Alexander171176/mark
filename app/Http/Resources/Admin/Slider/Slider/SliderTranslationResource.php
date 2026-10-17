@@ -7,9 +7,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class SliderTranslationResource extends JsonResource
 {
-    /**
-     * Преобразование перевода слайдера.
-     */
+    /** Представление перевода слайдера. */
     public function toArray(Request $request): array
     {
         return [
@@ -17,16 +15,16 @@ class SliderTranslationResource extends JsonResource
             'slider_id' => $this->slider_id,
             'locale' => $this->locale,
 
-            /** Переводимые поля */
+            // Переводимые поля.
             'title' => $this->title,
             'subtitle' => $this->subtitle,
             'description' => $this->description,
 
-            /** SEO */
+            // SEO.
             'meta_title' => $this->meta_title,
             'meta_description' => $this->meta_description,
 
-            /** Системные даты */
+            // Системные даты.
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

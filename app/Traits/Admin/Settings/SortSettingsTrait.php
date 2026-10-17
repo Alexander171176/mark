@@ -569,4 +569,14 @@ trait SortSettingsTrait
             'adminSlidersDefaultSort'
         );
     }
+
+    /** Обновление сортировки преимуществ слайдов по умолчанию */
+    public function updateAdminSortSliderSlideAdvantages(
+        UpdateSortRequest $request
+    ): RedirectResponse {
+        return $this->sortSetting(
+            $request,
+            'adminSliderSlideAdvantagesDefaultSort'
+        );
+    }
 }

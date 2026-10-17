@@ -20,6 +20,9 @@ use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
 use App\Http\Controllers\Admin\Review\ReviewController;
 use App\Http\Controllers\Admin\Slider\Slider\SliderController;
+use App\Http\Controllers\Admin\Slider\SliderSlide\SliderSlideController;
+use App\Http\Controllers\Admin\Slider\SliderSlideAction\SliderSlideActionController;
+use App\Http\Controllers\Admin\Slider\SliderSlideAdvantage\SliderSlideAdvantageController;
 use Illuminate\Support\Facades\Route;
 
 // Комментарии - одобрение
@@ -59,6 +62,24 @@ Route::put('/sliders/{slider}/approve',
     [SliderController::class, 'approve'])
     ->whereNumber('slider')
     ->name('sliders.approve');
+
+// Слайды
+Route::put('/slider-slides/{sliderSlide}/approve',
+    [SliderSlideController::class, 'approve'])
+    ->whereNumber('sliderSlide')
+    ->name('sliderSlides.approve');
+
+// Действия слайдов
+Route::put('/slider-slide-actions/{sliderSlideAction}/approve',
+    [SliderSlideActionController::class, 'approve'])
+    ->whereNumber('sliderSlideAction')
+    ->name('sliderSlideActions.approve');
+
+// Преимущества слайдов
+Route::put('/slider-slide-advantages/{sliderSlideAdvantage}/approve',
+    [SliderSlideAdvantageController::class, 'approve'])
+    ->whereNumber('sliderSlideAdvantage')
+    ->name('sliderSlideAdvantages.approve');
 
 // Маркет
 Route::put('/market-companies/{marketCompany}/approve',

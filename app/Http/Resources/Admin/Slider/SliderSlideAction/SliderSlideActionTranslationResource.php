@@ -7,22 +7,20 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class SliderSlideActionTranslationResource extends JsonResource
 {
-    /**
-     * Ресурс перевода кнопки или действия.
-     */
+    /** Перевод самостоятельной кнопки или действия. */
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'slider_slide_action_id' => $this->slider_slide_action_id,
+            'id' => (int) $this->id,
+            'slider_slide_action_id' => (int) $this->slider_slide_action_id,
             'locale' => $this->locale,
 
-            /** Переводимые поля */
+            // Переводимые поля.
             'label' => $this->label,
             'title' => $this->title,
             'aria_label' => $this->aria_label,
 
-            /** Системные даты */
+            // Системные даты.
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

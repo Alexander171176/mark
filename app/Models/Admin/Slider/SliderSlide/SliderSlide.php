@@ -8,6 +8,7 @@ use App\Models\Admin\Slider\SliderSlideAdvantage\SliderSlideAdvantage;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,10 +21,12 @@ class SliderSlide extends Model
     protected $table = 'slider_slides';
 
     protected $fillable = [
-        'slider_id',
-        'activity',
+        'moderation_status',
+        'moderated_by',
+        'moderated_at',
+        'moderation_note',
         'sort',
-        'is_main',
+        'activity',
         'status',
         'published_at',
         'show_from_at',
@@ -45,10 +48,11 @@ class SliderSlide extends Model
     ];
 
     protected $casts = [
-        'slider_id' => 'integer',
-        'activity' => 'boolean',
+        'moderation_status' => 'integer',
+        'moderated_by' => 'integer',
+        'moderated_at' => 'datetime',
         'sort' => 'integer',
-        'is_main' => 'boolean',
+        'activity' => 'boolean',
         'published_at' => 'datetime',
         'show_from_at' => 'datetime',
         'show_to_at' => 'datetime',
@@ -67,13 +71,24 @@ class SliderSlide extends Model
      | RELATIONS
      ========================================================= */
 
-    /** Родительский слайдер */
-    public function slider(): BelongsTo
+    /** Пользователь, выполнивший модерацию. */
+    public function moderator(): BelongsTo
     {
-        return $this->belongsTo(
+        return $this->belongsTo(User::class, 'moderated_by');
+    }
+
+    /** Слайдеры, в которых используется данный слайд. */
+    public function sliders(): BelongsToMany
+    {
+        return $this->belongsToMany(
             Slider::class,
+            'slider_has_slides',
+            'slider_slide_id',
             'slider_id'
-        );
+        )
+            ->withPivot(['id', 'sort', 'activity', 'is_main'])
+            ->withTimestamps()
+            ->orderBy('sliders.id');
     }
 
     /** Все переводы слайда */
@@ -130,7 +145,7 @@ class SliderSlide extends Model
         return null;
     }
 
-    /** Изображения слайда */
+    /** Изображения слайда; media загружается отдельно через images.media. */
     public function images(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -157,31 +172,65 @@ class SliderSlide extends Model
             ->wherePivot('purpose', 'mobile');
     }
 
-    /** Кнопки и действия слайда */
-    public function actions(): HasMany
+    /** Кнопки, подключённые к слайду. */
+    public function actions(): BelongsToMany
     {
-        return $this->hasMany(
+        return $this->belongsToMany(
             SliderSlideAction::class,
-            'slider_slide_id'
+            'slider_slide_has_actions',
+            'slider_slide_id',
+            'slider_slide_action_id'
         )
-            ->orderBy('sort')
-            ->orderBy('id');
+            ->withPivot(['id', 'sort', 'activity', 'is_primary'])
+            ->withTimestamps()
+            ->orderByPivot('sort')
+            ->orderBy('slider_slide_actions.id');
     }
 
-    /** Преимущества слайда */
-    public function advantages(): HasMany
+    /** Преимущества, подключённые к слайду. */
+    public function advantages(): BelongsToMany
     {
-        return $this->hasMany(
+        return $this->belongsToMany(
             SliderSlideAdvantage::class,
-            'slider_slide_id'
+            'slider_slide_has_advantages',
+            'slider_slide_id',
+            'slider_slide_advantage_id'
         )
-            ->orderBy('sort')
-            ->orderBy('id');
+            ->withPivot(['id', 'sort', 'activity'])
+            ->withTimestamps()
+            ->orderByPivot('sort')
+            ->orderBy('slider_slide_advantages.id');
     }
 
     /* =========================================================
      | BASE SCOPES
      ========================================================= */
+
+    /** Одобренные записи. */
+    public function scopeApproved(Builder $query): Builder
+    {
+        return $query->where('slider_slides.moderation_status', 1);
+    }
+
+    /** Запись ожидает модерации. */
+    public function isPendingModeration(): bool
+    {
+        return (int) $this->moderation_status === 0;
+    }
+
+    /** Запись одобрена. */
+    public function isApproved(): bool
+    {
+        return (int) $this->moderation_status === 1;
+    }
+
+    /** Запись отклонена. */
+    public function isRejected(): bool
+    {
+        return (int) $this->moderation_status === 2;
+    }
+
+
 
     /** Активные слайды */
     public function scopeActive(Builder $query): Builder
@@ -202,21 +251,20 @@ class SliderSlide extends Model
             ->where('slider_slides.published_at', '<=', now());
     }
 
-    /** Главные слайды с заголовком h1 */
+    /** Слайды, отмеченные как главные хотя бы в одном слайдере. */
     public function scopeMain(Builder $query): Builder
     {
-        return $query->where(
-            'slider_slides.is_main',
-            true
-        );
+        return $query->whereHas('sliders', function (Builder $sliderQuery) {
+            $sliderQuery->where('slider_has_slides.is_main', true);
+        });
     }
 
-    /** Сортировка по умолчанию */
+    /** Сортировка самостоятельного каталога слайдов. */
     public function scopeOrdered(Builder $query): Builder
     {
         return $query
             ->orderBy('slider_slides.sort', 'asc')
-            ->orderBy('slider_slides.id', 'asc');
+            ->orderByDesc('slider_slides.id');
     }
 
     /** Период отображения слайда */
@@ -251,30 +299,30 @@ class SliderSlide extends Model
     public function scopeForPublic(Builder $query): Builder
     {
         return $query
+            ->approved()
             ->published()
             ->inShowWindow();
     }
 
     /**
-     * Публичные слайды вместе с проверкой
-     * родительского слайдера.
+     * Публичные слайды, подключённые хотя бы к одному публичному
+     * слайдеру через активную связь.
      */
     public function scopeWithPublicSlider(Builder $query): Builder
     {
         return $query
             ->forPublic()
-            ->whereHas(
-                'slider',
-                fn (Builder $sliderQuery) =>
+            ->whereHas('sliders', function (Builder $sliderQuery) {
                 $sliderQuery->forPublic()
-            );
+                    ->where('slider_has_slides.activity', true);
+            });
     }
 
     /* =========================================================
      | SEARCH
      ========================================================= */
 
-    /** Поиск для административного списка */
+    /** Серверный поиск для режима server; frontend фильтрует полученную коллекцию в Vue. */
     public function scopeSearch(
         Builder $query,
         ?string $term,
@@ -290,11 +338,12 @@ class SliderSlide extends Model
 
         return $query->where(
             function (Builder $q) use ($term, $locale) {
-                $q->where(
-                    'slider_slides.status',
-                    'like',
-                    "%{$term}%"
-                )
+                $q->where('slider_slides.moderation_note', 'like', "%{$term}%")
+                    ->orWhere(
+                        'slider_slides.status',
+                        'like',
+                        "%{$term}%"
+                    )
                     ->orWhere(
                         'slider_slides.animation_type',
                         'like',
@@ -327,7 +376,7 @@ class SliderSlide extends Model
      | SORTING
      ========================================================= */
 
-    /** Сортировка административного списка */
+    /** Серверная сортировка для режима server; frontend сортирует в Vue. */
     public function scopeSortByParam(
         Builder $query,
         ?string $sort,
@@ -344,11 +393,13 @@ class SliderSlide extends Model
 
             'sortAsc' => $query
                 ->orderBy('slider_slides.sort', 'asc')
-                ->orderBy('slider_slides.id', 'asc'),
+                ->orderByDesc('slider_slides.id'),
+
 
             'sortDesc' => $query
                 ->orderBy('slider_slides.sort', 'desc')
                 ->orderByDesc('slider_slides.id'),
+
 
             'titleAsc' => $this->applyTitleSort(
                 $query,
@@ -382,6 +433,19 @@ class SliderSlide extends Model
                 ->where('slider_slides.status', 'archived')
                 ->orderByDesc('slider_slides.id'),
 
+            'moderationPending' => $query
+                ->where('slider_slides.moderation_status', 0)
+                ->orderByDesc('slider_slides.id'),
+
+            'moderationApproved' => $query
+                ->where('slider_slides.moderation_status', 1)
+                ->orderByDesc('slider_slides.id'),
+
+            'moderationRejected' => $query
+                ->where('slider_slides.moderation_status', 2)
+                ->orderByDesc('slider_slides.id'),
+
+
             'activity' => $query
                 ->where('slider_slides.activity', true)
                 ->orderByDesc('slider_slides.id'),
@@ -390,13 +454,11 @@ class SliderSlide extends Model
                 ->where('slider_slides.activity', false)
                 ->orderByDesc('slider_slides.id'),
 
-            'main' => $query
-                ->where('slider_slides.is_main', true)
-                ->orderByDesc('slider_slides.id'),
+            'main' => $query->main()->orderByDesc('slider_slides.id'),
 
-            'notMain' => $query
-                ->where('slider_slides.is_main', false)
-                ->orderByDesc('slider_slides.id'),
+            'notMain' => $query->whereDoesntHave('sliders', function (Builder $sliderQuery) {
+                $sliderQuery->where('slider_has_slides.is_main', true);
+            })->orderByDesc('slider_slides.id'),
 
             'publishedAtAsc' => $query
                 ->orderBy('slider_slides.published_at', 'asc')
@@ -440,6 +502,18 @@ class SliderSlide extends Model
 
             default => $query->ordered(),
         };
+    }
+
+    /** Проверка глобальной активности без запроса к БД. */
+    public function isActive(): bool
+    {
+        return (bool) $this->activity;
+    }
+
+    /** Проверка состояния публикации без запроса к БД. */
+    public function isPublished(): bool
+    {
+        return $this->status === 'published';
     }
 
     /** Сортировка по названию текущего перевода */

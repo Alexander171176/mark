@@ -5,9 +5,9 @@ namespace App\Http\Resources\Admin\Slider\Slider;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/** Компактное представление слайдера для Index и связанных списков. */
 class SliderSharedResource extends JsonResource
 {
-    /** Компактное представление слайдера для Index и связанных списков. */
     public function toArray(Request $request): array
     {
         $translation = $this->currentTranslation();
@@ -16,15 +16,11 @@ class SliderSharedResource extends JsonResource
             'id' => (int) $this->id,
             'user_id' => $this->user_id !== null ? (int) $this->user_id : null,
 
-            /** Основные данные */
+            /** Основные поля для списка */
             'code' => $this->code,
             'type' => $this->type,
-
-            /** Отображение и сортировка */
             'sort' => (int) $this->sort,
             'activity' => (bool) $this->activity,
-
-            /** Публикация */
             'status' => $this->status,
 
             /** Модерация */
@@ -36,37 +32,44 @@ class SliderSharedResource extends JsonResource
             'moderated_at' => $this->moderated_at?->toISOString(),
             'moderation_note' => $this->moderation_note,
 
-            /** Даты публикации */
+            /** Публикация */
             'published_at' => $this->published_at?->format('Y-m-d\TH:i'),
             'show_from_at' => $this->show_from_at?->format('Y-m-d\TH:i'),
             'show_to_at' => $this->show_to_at?->format('Y-m-d\TH:i'),
 
-            /** Краткие настройки Swiper */
+            /** Краткие настройки */
             'effect' => $this->effect,
-            'autoplay_delay' => $this->autoplay_delay !== null
-                ? (int) $this->autoplay_delay
-                : null,
+            'autoplay_delay' => $this->autoplay_delay !== null ? (int) $this->autoplay_delay : null,
             'loop' => (bool) $this->loop,
 
-            /** Счётчик слайдов */
+            /** Счётчик связей */
             'slides_count' => $this->whenCounted('slides'),
 
-            /** Текущий перевод */
-            'translation' => $translation
-                ? new SliderTranslationResource($translation)
-                : null,
+            /** Только текущий перевод; translations[] для Index не возвращаем */
+            'translation' => $translation ? new SliderTranslationResource($translation) : null,
 
-            /** Изображения слайдов для мини-галереи в Index. */
+            /** Миниатюры только из eager-loaded slides.images.media */
             'preview_images' => $this->whenLoaded('slides', function () {
                 return $this->slides
-                    ->sortBy(fn ($slide) => [(int) $slide->sort, (int) $slide->id])
+                    ->sortBy(fn ($slide) => [
+                        (int) ($slide->relationLoaded('pivot') ? ($slide->pivot?->sort ?? 0) : 0),
+                        (int) $slide->id,
+                    ])
                     ->flatMap(function ($slide) {
                         if (! $slide->relationLoaded('images')) {
                             return [];
                         }
 
                         return $slide->images->map(function ($image) use ($slide) {
-                            $media = $image->getFirstMedia('images');
+                            // Важно: getFirstMedia() здесь не вызываем,
+                            // так как MediaLibrary может загрузить связь лениво.
+                            if (! $image->relationLoaded('media')) {
+                                return null;
+                            }
+
+                            $media = $image->getRelation('media')
+                                ->firstWhere('collection_name', 'images');
+
                             if (! $media) {
                                 return null;
                             }
@@ -98,27 +101,37 @@ class SliderSharedResource extends JsonResource
                 ];
             }),
 
-            /** Системные даты */
+            /** Модератор, если загружен */
+            'moderator' => $this->whenLoaded('moderator', function () {
+                if (! $this->moderator) {
+                    return null;
+                }
+
+                return [
+                    'id' => (int) $this->moderator->id,
+                    'name' => $this->moderator->name,
+                    'email' => $this->moderator->email,
+                ];
+            }),
+
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 
-    /**
-     * Текущий перевод из заранее загруженных translations.
-     * Дополнительные SQL-запросы не выполняются.
-     */
+    /** Читаем только переводы, уже загруженные контроллером. */
     private function currentTranslation(): ?object
     {
-        if (! $this->relationLoaded('translations')) {
+        if (! $this->resource->relationLoaded('translations')) {
             return null;
         }
 
         $locale = app()->getLocale();
         $fallback = config('app.fallback_locale', 'ru');
+        $translations = $this->resource->getRelation('translations');
 
-        return $this->translations->firstWhere('locale', $locale)
-            ?: $this->translations->firstWhere('locale', $fallback)
-                ?: $this->translations->first();
+        return $translations->firstWhere('locale', $locale)
+            ?: $translations->firstWhere('locale', $fallback)
+                ?: $translations->first();
     }
 }

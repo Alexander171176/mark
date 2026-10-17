@@ -566,4 +566,14 @@ trait CountSettingsTrait
             'adminSlidersPerPage'
         );
     }
+
+    /** Обновление количества преимуществ слайдов на странице */
+    public function updateAdminCountSliderSlideAdvantages(
+        UpdateCountSettingRequest $request
+    ): RedirectResponse {
+        return $this->countSetting(
+            $request,
+            'adminSliderSlideAdvantagesPerPage'
+        );
+    }
 }

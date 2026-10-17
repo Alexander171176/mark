@@ -1,4 +1,3 @@
-
 <?php
 
 use Illuminate\Database\Migrations\Migration;
@@ -10,62 +9,56 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('slider_slide_actions', function (Blueprint $table) {
-
-            // Основные данные действия.
+            // Основные данные самостоятельного действия.
             $table->id(); // Уникальный идентификатор действия.
-
-            $table->foreignId('slider_slide_id')
-                ->constrained('slider_slides')
-                ->cascadeOnDelete(); // Слайд, которому принадлежит кнопка.
-
-            // Управление отображением.
-            $table->unsignedInteger('sort')
-                ->default(0); // Порядок кнопки внутри слайда (Drag & Drop).
-
-            $table->boolean('activity')
-                ->default(true); // Активность кнопки: показывать или скрывать.
-
-            $table->boolean('is_primary')
-                ->default(false); // Основная кнопка с акцентным оформлением.
+            $table->boolean('activity')->default(true); // Глобальная активность кнопки во всех слайдах.
 
             // Тип и назначение действия.
-            $table->string('action_type', 30)
-                ->default('url'); // Тип действия: url, route, form, anchor.
-
-            $table->string('action_value', 2048)
-                ->nullable(); // URL, имя маршрута, код формы или якорь.
-
-            $table->json('route_params')
-                ->nullable(); // Параметры именованного маршрута Laravel.
-
-            $table->string('target', 20)
-                ->default('_self'); // Способ открытия ссылки: _self или _blank.
+            $table->string('action_type', 30)->default('url'); // url, route, form, anchor.
+            $table->string('action_value', 2048)->nullable(); // URL, маршрут, код формы или якорь.
+            $table->json('route_params')->nullable(); // Параметры именованного маршрута Laravel.
+            $table->string('target', 20)->default('_self'); // _self или _blank.
 
             // Внешний вид кнопки.
-            $table->string('style', 50)
-                ->nullable(); // Вариант оформления: primary, secondary, outline и др.
+            $table->string('style', 50)->nullable(); // primary, secondary, outline и др.
+            $table->string('icon', 100)->nullable(); // Название иконки.
+            $table->string('icon_position', 20)->default('left'); // left или right.
+            $table->string('css_class', 255)->nullable(); // Дополнительный CSS-класс.
+            $table->json('settings')->nullable(); // Расширенные настройки поведения и оформления.
 
-            $table->string('icon', 100)
-                ->nullable(); // Название иконки, отображаемой на кнопке.
+            // Модерация действия.
+            $table->unsignedTinyInteger('moderation_status')
+                ->default(0)
+                ->index('slider_slide_actions_moderation_status_idx')
+                ->comment('Модерация: 0=pending, 1=approved, 2=rejected');
 
-            $table->string('icon_position', 20)
-                ->default('left'); // Расположение иконки: left или right.
+            $table->unsignedBigInteger('moderated_by')
+                ->nullable()
+                ->index('slider_slide_actions_moderated_by_idx')
+                ->comment('Модератор (users.id)');
 
-            $table->string('css_class', 255)
-                ->nullable(); // Дополнительный CSS-класс оформления кнопки.
+            $table->foreign('moderated_by', 'slider_slide_actions_moderated_by_fk')
+                ->references('id')
+                ->on('users')
+                ->nullOnDelete();
 
-            // Дополнительные настройки.
-            $table->json('settings')
-                ->nullable(); // Расширенные настройки поведения и оформления.
+            $table->timestamp('moderated_at')
+                ->nullable()
+                ->index('slider_slide_actions_moderated_at_idx')
+                ->comment('Дата модерации');
+
+            $table->text('moderation_note')
+                ->nullable()
+                ->comment('Комментарий модератора');
+
+            $table->unsignedInteger('sort')->default(0); // Глобальный порядок сортировки в админке.
 
             // Системные поля.
-            $table->timestamps(); // Даты создания и изменения действия.
+            $table->timestamps(); // Даты создания и последнего изменения.
 
             // Индексы.
-            $table->index(
-                ['slider_slide_id', 'sort', 'id'],
-                'slider_slide_actions_order_idx'
-            ); // Быстрая сортировка кнопок внутри конкретного слайда.
+            $table->index(['activity', 'moderation_status'], 'slider_slide_actions_public_idx');
+            $table->index(['sort', 'id'], 'slider_slide_actions_sort_idx');
         });
     }
 

@@ -37,6 +37,9 @@ use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionContr
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
 use App\Http\Controllers\Admin\Slider\Slider\SliderController;
+use App\Http\Controllers\Admin\Slider\SliderSlide\SliderSlideController;
+use App\Http\Controllers\Admin\Slider\SliderSlideAction\SliderSlideActionController;
+use App\Http\Controllers\Admin\Slider\SliderSlideAdvantage\SliderSlideAdvantageController;
 use App\Http\Controllers\Admin\System\ImagePreset\ImagePresetController;
 use App\Http\Controllers\Admin\System\Location\LocationController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
@@ -156,11 +159,25 @@ Route::put('/form-fields/update-sort-bulk',
     [FormFieldController::class, 'updateSortBulk'])
     ->name('formFields.updateSortBulk');
 
-// Конструктор слайдеров — Drag & Drop
-Route::put(
-    '/sliders/update-sort-bulk',
-    [SliderController::class, 'updateSortBulk']
-)->name('sliders.updateSortBulk');
+// Слайдеры
+Route::put('/sliders/update-sort-bulk',
+    [SliderController::class, 'updateSortBulk'])
+    ->name('sliders.updateSortBulk');
+
+// Слайды
+Route::put('/slider-slides/update-sort-bulk',
+    [SliderSlideController::class, 'updateSortBulk'])
+    ->name('sliderSlides.updateSortBulk');
+
+// Действия слайдов
+Route::put('/slider-slide-actions/update-sort-bulk',
+    [SliderSlideActionController::class, 'updateSortBulk'])
+    ->name('sliderSlideActions.updateSortBulk');
+
+// Преимущества слайдов
+Route::put('/slider-slide-advantages/update-sort-bulk',
+    [SliderSlideAdvantageController::class, 'updateSortBulk'])
+    ->name('sliderSlideAdvantages.updateSortBulk');
 
 // маркет
 Route::put('/market-companies/update-sort-bulk',

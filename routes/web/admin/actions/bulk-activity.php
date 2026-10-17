@@ -39,6 +39,9 @@ use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionContr
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
 use App\Http\Controllers\Admin\Slider\Slider\SliderController;
+use App\Http\Controllers\Admin\Slider\SliderSlide\SliderSlideController;
+use App\Http\Controllers\Admin\Slider\SliderSlideAction\SliderSlideActionController;
+use App\Http\Controllers\Admin\Slider\SliderSlideAdvantage\SliderSlideAdvantageController;
 use App\Http\Controllers\Admin\System\Location\LocationController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
@@ -159,10 +162,25 @@ Route::put('/form-fields/bulk-activity',
     [FormFieldController::class, 'bulkUpdateActivity'])
     ->name('formFields.bulkUpdateActivity');
 
-// слайдеры
+// Слайдеры
 Route::put('/sliders/bulk-activity',
     [SliderController::class, 'bulkUpdateActivity'])
     ->name('sliders.bulkUpdateActivity');
+
+// Слайды
+Route::put('/slider-slides/bulk-activity',
+    [SliderSlideController::class, 'bulkUpdateActivity'])
+    ->name('sliderSlides.bulkUpdateActivity');
+
+// Действия слайдов
+Route::put('/slider-slide-actions/bulk-activity',
+    [SliderSlideActionController::class, 'bulkUpdateActivity'])
+    ->name('sliderSlideActions.bulkUpdateActivity');
+
+// Преимущества слайдов
+Route::put('/slider-slide-advantages/bulk-activity',
+    [SliderSlideAdvantageController::class, 'bulkUpdateActivity'])
+    ->name('sliderSlideAdvantages.bulkUpdateActivity');
 
 // маркет
 Route::put('/market-companies/bulk-activity',

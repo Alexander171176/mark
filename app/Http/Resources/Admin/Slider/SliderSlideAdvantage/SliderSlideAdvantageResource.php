@@ -2,78 +2,101 @@
 
 namespace App\Http\Resources\Admin\Slider\SliderSlideAdvantage;
 
+use App\Models\Admin\Slider\SliderSlideAdvantage\SliderSlideAdvantageTranslation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class SliderSlideAdvantageResource extends JsonResource
 {
     /**
-     * Полный ресурс преимущества слайда.
-     *
-     * Используется для Show, Edit
-     * и административного конструктора слайдеров.
+     * Полный ресурс самостоятельного преимущества для Create/Edit/Show
+     * и административного конструктора слайдов.
+     * Все связи загружаются контроллером; ресурс не выполняет SQL-запросов.
      */
     public function toArray(Request $request): array
     {
         $translation = $this->currentTranslation();
+        $pivot = $this->resource->relationLoaded('pivot') ? $this->resource->pivot : null;
 
         return [
-            'id' => $this->id,
-            'slider_slide_id' => $this->slider_slide_id,
+            'id' => (int) $this->id,
 
-            /** Отображение и сортировка */
+            // Глобальные свойства преимущества.
             'sort' => (int) $this->sort,
             'activity' => (bool) $this->activity,
 
-            /** Настройки иконки */
+            // Модерация самостоятельного преимущества.
+            'moderation_status' => (int) $this->moderation_status,
+            'is_pending' => (int) $this->moderation_status === 0,
+            'is_approved' => (int) $this->moderation_status === 1,
+            'is_rejected' => (int) $this->moderation_status === 2,
+            'moderated_by' => $this->moderated_by !== null ? (int) $this->moderated_by : null,
+            'moderated_at' => $this->moderated_at?->toISOString(),
+            'moderation_note' => $this->moderation_note,
+            'moderator' => $this->whenLoaded('moderator', function () {
+                if (! $this->moderator) {
+                    return null;
+                }
+
+                return [
+                    'id' => (int) $this->moderator->id,
+                    'name' => $this->moderator->name,
+                    'email' => $this->moderator->email,
+                ];
+            }),
+
+            // Настройки иконки.
             'icon_type' => $this->icon_type,
             'icon' => $this->icon,
             'icon_color' => $this->icon_color,
 
-            /** Внешний вид преимущества */
+            // Оформление и дополнительные настройки.
             'style' => $this->style,
-
-            /** Дополнительные настройки */
             'settings' => $this->settings,
 
-            /** Текущий перевод */
+            // Локальное размещение в конкретном слайде.
+            // pivot.sort не зависит от глобального sort преимущества.
+            'pivot' => $pivot ? [
+                'id' => $pivot->id !== null ? (int) $pivot->id : null,
+                'slider_slide_id' => (int) $pivot->slider_slide_id,
+                'slider_slide_advantage_id' => (int) $pivot->slider_slide_advantage_id,
+                'sort' => (int) $pivot->sort,
+                'activity' => (bool) $pivot->activity,
+                'created_at' => $pivot->created_at?->toISOString(),
+                'updated_at' => $pivot->updated_at?->toISOString(),
+            ] : null,
+
+            'slides_count' => $this->whenCounted('slides'),
+
+            // Текущий перевод и все переводы для редактирования.
             'translation' => $translation
                 ? new SliderSlideAdvantageTranslationResource($translation)
                 : null,
-
-            /** Все переводы */
             'translations' => SliderSlideAdvantageTranslationResource::collection(
                 $this->whenLoaded('translations')
             ),
 
-            /** Системные даты */
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 
     /**
-     * Получение перевода из заранее загруженной коллекции.
-     *
-     * Приоритет:
-     * 1. Текущий язык приложения.
-     * 2. Резервный язык приложения.
-     * 3. Первый доступный перевод.
-     *
-     * Дополнительные SQL-запросы не выполняются.
+     * Текущая локаль → резервная → первый доступный перевод.
+     * Используется только заранее загруженная коллекция translations.
      */
-    private function currentTranslation(): ?object
+    private function currentTranslation(): ?SliderSlideAdvantageTranslation
     {
-        if (! $this->relationLoaded('translations')) {
+        if (! $this->resource->relationLoaded('translations')) {
             return null;
         }
 
         $locale = app()->getLocale();
-
         $fallback = config('app.fallback_locale', 'ru');
+        $translations = $this->resource->translations;
 
-        return $this->translations->firstWhere('locale', $locale)
-            ?: $this->translations->firstWhere('locale', $fallback)
-                ?: $this->translations->first();
+        return $translations->firstWhere('locale', $locale)
+            ?: $translations->firstWhere('locale', $fallback)
+                ?: $translations->first();
     }
 }

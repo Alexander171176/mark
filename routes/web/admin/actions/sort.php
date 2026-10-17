@@ -38,6 +38,9 @@ use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionContr
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
 use App\Http\Controllers\Admin\Slider\Slider\SliderController;
+use App\Http\Controllers\Admin\Slider\SliderSlide\SliderSlideController;
+use App\Http\Controllers\Admin\Slider\SliderSlideAction\SliderSlideActionController;
+use App\Http\Controllers\Admin\Slider\SliderSlideAdvantage\SliderSlideAdvantageController;
 use App\Http\Controllers\Admin\System\ImagePreset\ImagePresetController;
 use App\Http\Controllers\Admin\System\Location\LocationController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
@@ -179,13 +182,29 @@ Route::put('/form-fields/{formField}/sort',
     ->whereNumber('formField')
     ->name('formFields.updateSort');
 
-// Конструктор слайдеров — сортировка одной записи
-Route::put(
-    '/sliders/{id}/sort',
-    [SliderController::class, 'updateSort']
-)
+// Слайдеры
+Route::put('/sliders/{id}/sort',
+    [SliderController::class, 'updateSort'])
     ->whereNumber('id')
     ->name('sliders.updateSort');
+
+// Слайды
+Route::put('/slider-slides/{id}/sort',
+    [SliderSlideController::class, 'updateSort'])
+    ->whereNumber('id')
+    ->name('sliderSlides.updateSort');
+
+// Действия слайдов
+Route::put('/slider-slide-actions/{id}/sort',
+    [SliderSlideActionController::class, 'updateSort'])
+    ->whereNumber('id')
+    ->name('sliderSlideActions.updateSort');
+
+// Преимущества слайдов
+Route::put('/slider-slide-advantages/{id}/sort',
+    [SliderSlideAdvantageController::class, 'updateSort'])
+    ->whereNumber('id')
+    ->name('sliderSlideAdvantages.updateSort');
 
 // маркет
 Route::put('/market-companies/{marketCompany}/sort',

@@ -48,6 +48,9 @@ use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionContr
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
 use App\Http\Controllers\Admin\Slider\Slider\SliderController;
+use App\Http\Controllers\Admin\Slider\SliderSlide\SliderSlideController;
+use App\Http\Controllers\Admin\Slider\SliderSlideAction\SliderSlideActionController;
+use App\Http\Controllers\Admin\Slider\SliderSlideAdvantage\SliderSlideAdvantageController;
 use App\Http\Controllers\Admin\Statistics\Chart\ChartController;
 use App\Http\Controllers\Admin\System\Component\ComponentController;
 use App\Http\Controllers\Admin\System\Location\LocationController;
@@ -337,17 +340,31 @@ Route::resource('/form-submissions', FormSubmissionController::class)
     ])
     ->names('formSubmissions');
 
-
 /*
 |--------------------------------------------------------------------------
 | Конструктор слайдеров
 |--------------------------------------------------------------------------
 */
 
-// Слайдеры
+// Слайдеры.
 Route::resource('/sliders', SliderController::class)
     ->parameters(['sliders' => 'slider'])
     ->names('sliders');
+
+// Слайды — самостоятельные сущности.
+Route::resource('/slider-slides', SliderSlideController::class)
+    ->parameters(['slider-slides' => 'sliderSlide'])
+    ->names('sliderSlides');
+
+// Кнопки и действия слайдов.
+Route::resource('/slider-slide-actions', SliderSlideActionController::class)
+    ->parameters(['slider-slide-actions' => 'sliderSlideAction'])
+    ->names('sliderSlideActions');
+
+// Преимущества слайдов.
+Route::resource('/slider-slide-advantages', SliderSlideAdvantageController::class)
+    ->parameters(['slider-slide-advantages' => 'sliderSlideAdvantage'])
+    ->names('sliderSlideAdvantages');
 
 /*
 |--------------------------------------------------------------------------

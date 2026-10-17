@@ -34,6 +34,9 @@ use App\Http\Controllers\Admin\School\SchoolQuizAttempt\SchoolQuizAttemptControl
 use App\Http\Controllers\Admin\School\SchoolQuizAttemptItem\SchoolQuizAttemptItemController;
 use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\Slider\Slider\SliderController;
+use App\Http\Controllers\Admin\Slider\SliderSlide\SliderSlideController;
+use App\Http\Controllers\Admin\Slider\SliderSlideAction\SliderSlideActionController;
+use App\Http\Controllers\Admin\Slider\SliderSlideAdvantage\SliderSlideAdvantageController;
 use App\Http\Controllers\Admin\System\Location\LocationController;
 use Illuminate\Support\Facades\Route;
 
@@ -125,10 +128,25 @@ Route::delete('/form-fields/bulk-delete',
     [FormFieldController::class, 'bulkDestroy'])
     ->name('formFields.bulkDestroy');
 
-// слайдеры
+// Слайдеры
 Route::delete('/sliders/bulk-delete',
     [SliderController::class, 'bulkDestroy'])
     ->name('sliders.bulkDestroy');
+
+// Слайды
+Route::delete('/slider-slides/bulk-delete',
+    [SliderSlideController::class, 'bulkDestroy'])
+    ->name('sliderSlides.bulkDestroy');
+
+// Действия слайдов
+Route::delete('/slider-slide-actions/bulk-delete',
+    [SliderSlideActionController::class, 'bulkDestroy'])
+    ->name('sliderSlideActions.bulkDestroy');
+
+// Преимущества слайдов
+Route::delete('/slider-slide-advantages/bulk-delete',
+    [SliderSlideAdvantageController::class, 'bulkDestroy'])
+    ->name('sliderSlideAdvantages.bulkDestroy');
 
 // маркет
 Route::delete('/market-companies/bulk-delete',

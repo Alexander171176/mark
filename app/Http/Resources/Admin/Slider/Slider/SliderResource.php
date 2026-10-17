@@ -6,26 +6,23 @@ use App\Http\Resources\Admin\Slider\SliderSlide\SliderSlideResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/** Полное представление слайдера для Edit, Show и конструктора. */
 class SliderResource extends JsonResource
 {
-    /** Полное представление слайдера для редактирования и просмотра. */
     public function toArray(Request $request): array
     {
+        // Используем только загруженные переводы; SQL-запросов из ресурса нет.
         $translation = $this->currentTranslation();
 
         return [
             'id' => (int) $this->id,
             'user_id' => $this->user_id !== null ? (int) $this->user_id : null,
 
-            /** Основные данные */
+            /** Основные параметры */
             'code' => $this->code,
             'type' => $this->type,
-
-            /** Отображение и сортировка */
             'sort' => (int) $this->sort,
             'activity' => (bool) $this->activity,
-
-            /** Статус публикации */
             'status' => $this->status,
 
             /** Модерация */
@@ -37,52 +34,36 @@ class SliderResource extends JsonResource
             'moderated_at' => $this->moderated_at?->toISOString(),
             'moderation_note' => $this->moderation_note,
 
-            /** Публикация и период отображения */
+            /** Публикация */
             'published_at' => $this->published_at?->format('Y-m-d\TH:i'),
             'show_from_at' => $this->show_from_at?->format('Y-m-d\TH:i'),
             'show_to_at' => $this->show_to_at?->format('Y-m-d\TH:i'),
 
-            /** Автоматическое переключение */
-            'autoplay_delay' => $this->autoplay_delay !== null
-                ? (int) $this->autoplay_delay
-                : null,
+            /** Настройки Swiper */
+            'autoplay_delay' => $this->autoplay_delay !== null ? (int) $this->autoplay_delay : null,
             'autoplay_disable_on_interaction' => (bool) $this->autoplay_disable_on_interaction,
             'pause_on_hover' => (bool) $this->pause_on_hover,
-
-            /** Эффекты переключения */
             'effect' => $this->effect,
             'speed' => (int) $this->speed,
             'effect_options' => $this->effect_options,
-
-            /** Управление слайдером */
             'loop' => (bool) $this->loop,
             'keyboard' => (bool) $this->keyboard,
             'allow_touch_move' => (bool) $this->allow_touch_move,
             'grab_cursor' => (bool) $this->grab_cursor,
-
-            /** Размеры и расположение */
-            'slides_per_view' => (float) $this->slides_per_view,
+            'slides_per_view' => $this->slides_per_view !== null ? (float) $this->slides_per_view : null,
             'space_between' => (int) $this->space_between,
             'auto_height' => (bool) $this->auto_height,
             'breakpoints' => $this->breakpoints,
-
-            /** Элементы навигации */
             'show_navigation' => (bool) $this->show_navigation,
             'show_pagination' => (bool) $this->show_pagination,
-
-            /** Дополнительные настройки */
             'settings' => $this->settings,
 
-            /** Счётчики */
+            /** Счётчики, только если переданы контроллером */
             'slides_count' => $this->whenCounted('slides'),
 
-            /** Переводы */
-            'translation' => $translation
-                ? new SliderTranslationResource($translation)
-                : null,
-            'translations' => SliderTranslationResource::collection(
-                $this->whenLoaded('translations')
-            ),
+            /** Переводы: текущий и все языки для редактирования */
+            'translation' => $translation ? new SliderTranslationResource($translation) : null,
+            'translations' => SliderTranslationResource::collection($this->whenLoaded('translations')),
 
             /** Владелец */
             'owner' => $this->whenLoaded('owner', function () {
@@ -111,33 +92,27 @@ class SliderResource extends JsonResource
                 ];
             }),
 
-            /** Слайды */
-            'slides' => SliderSlideResource::collection(
-                $this->whenLoaded('slides')
-            ),
+            /** Слайды со своими локальными pivot-настройками */
+            'slides' => SliderSlideResource::collection($this->whenLoaded('slides')),
 
-            /** Системные даты */
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 
-    /**
-     * Текущий перевод из уже загруженной коллекции.
-     * Приоритет: текущая локаль → резервная → первый доступный.
-     * Дополнительные SQL-запросы не выполняются.
-     */
+    /** Текущая локаль → fallback → первый доступный перевод. */
     private function currentTranslation(): ?object
     {
-        if (! $this->relationLoaded('translations')) {
+        if (! $this->resource->relationLoaded('translations')) {
             return null;
         }
 
         $locale = app()->getLocale();
         $fallback = config('app.fallback_locale', 'ru');
+        $translations = $this->resource->getRelation('translations');
 
-        return $this->translations->firstWhere('locale', $locale)
-            ?: $this->translations->firstWhere('locale', $fallback)
-                ?: $this->translations->first();
+        return $translations->firstWhere('locale', $locale)
+            ?: $translations->firstWhere('locale', $fallback)
+                ?: $translations->first();
     }
 }

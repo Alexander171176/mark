@@ -40,6 +40,9 @@ use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionContr
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
 use App\Http\Controllers\Admin\Slider\Slider\SliderController;
+use App\Http\Controllers\Admin\Slider\SliderSlide\SliderSlideController;
+use App\Http\Controllers\Admin\Slider\SliderSlideAction\SliderSlideActionController;
+use App\Http\Controllers\Admin\Slider\SliderSlideAdvantage\SliderSlideAdvantageController;
 use App\Http\Controllers\Admin\System\Location\LocationController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
@@ -179,11 +182,29 @@ Route::put('/form-fields/{formField}/activity',
     ->whereNumber('formField')
     ->name('formFields.updateActivity');
 
-// слайдеры
+// Слайдеры
 Route::put('/sliders/{slider}/activity',
     [SliderController::class, 'updateActivity'])
     ->whereNumber('slider')
     ->name('sliders.updateActivity');
+
+// Слайды
+Route::put('/slider-slides/{sliderSlide}/activity',
+    [SliderSlideController::class, 'updateActivity'])
+    ->whereNumber('sliderSlide')
+    ->name('sliderSlides.updateActivity');
+
+// Действия слайдов
+Route::put('/slider-slide-actions/{sliderSlideAction}/activity',
+    [SliderSlideActionController::class, 'updateActivity'])
+    ->whereNumber('sliderSlideAction')
+    ->name('sliderSlideActions.updateActivity');
+
+// Преимущества слайдов
+Route::put('/slider-slide-advantages/{sliderSlideAdvantage}/activity',
+    [SliderSlideAdvantageController::class, 'updateActivity'])
+    ->whereNumber('sliderSlideAdvantage')
+    ->name('sliderSlideAdvantages.updateActivity');
 
 // маркет
 Route::put('/market-companies/{marketCompany}/activity',

@@ -74,6 +74,13 @@ class SliderRequest extends FormRequest
             }
         }
 
+        // Пустую дату модерации преобразуем в null.
+        if ($this->exists('moderated_at')) {
+            $prepared['moderated_at'] = $this->input('moderated_at') === ''
+                ? null
+                : $this->input('moderated_at');
+        }
+
         // Комментарий модератора: пустую строку преобразуем в null.
         if ($this->exists('moderation_note')) {
             $prepared['moderation_note'] = $this->normalizeNullableText(
@@ -153,7 +160,7 @@ class SliderRequest extends FormRequest
                         continue;
                     }
 
-                    $preparedTranslations[$locale] = [
+                    $preparedTranslations[$locale] = array_replace($translation, [
                         'title' => $this->normalizeNullableString(
                             Arr::get($translation, 'title')
                         ),
@@ -173,11 +180,45 @@ class SliderRequest extends FormRequest
                         'meta_description' => $this->normalizeNullableText(
                             Arr::get($translation, 'meta_description')
                         ),
-                    ];
+                    ]);
                 }
 
                 $prepared['translations'] = $preparedTranslations;
             }
+        }
+
+        /* =====================================================
+         | РАЗМЕЩЕНИЯ ГЛОБАЛЬНЫХ СЛАЙДОВ
+         ===================================================== */
+
+        if ($this->exists('slides') && is_array($this->input('slides'))) {
+            $slides = $this->input('slides');
+
+            foreach ($slides as $index => $slide) {
+                if (! is_array($slide)) {
+                    continue;
+                }
+
+                foreach (['activity', 'is_main'] as $field) {
+                    if (! array_key_exists($field, $slide)) {
+                        continue;
+                    }
+
+                    $value = $slide[$field];
+
+                    if (in_array($value, [true, 1, '1', 'true', 'on', 'yes'], true)) {
+                        $slides[$index][$field] = true;
+                    } elseif (in_array($value, [false, 0, '0', 'false', 'off', 'no'], true)) {
+                        $slides[$index][$field] = false;
+                    }
+                }
+
+                if (array_key_exists('sort', $slide) && $slide['sort'] === '') {
+                    $slides[$index]['sort'] = null;
+                }
+            }
+
+            $prepared['slides'] = $slides;
         }
 
         $this->merge($prepared);
@@ -412,6 +453,25 @@ class SliderRequest extends FormRequest
                  | ПЕРЕВОДЫ
                  ================================================= */
 
+                /* =================================================
+                  | СВЯЗИ С ГЛОБАЛЬНЫМИ СЛАЙДАМИ
+                  ================================================= */
+
+                // Поле отсутствует — существующие связи не меняем.
+                // Пустой массив — отключаем все слайды.
+                'slides' => ['sometimes', 'required', 'array'],
+                'slides.*' => ['required', 'array:id,sort,activity,is_main'],
+                'slides.*.id' => [
+                    'required',
+                    'integer',
+                    'min:1',
+                    'distinct',
+                    Rule::exists('slider_slides', 'id'),
+                ],
+                'slides.*.sort' => ['sometimes', 'required', 'integer', 'min:0', 'max:4294967295'],
+                'slides.*.activity' => ['sometimes', 'required', 'boolean'],
+                'slides.*.is_main' => ['sometimes', 'required', 'boolean'],
+
                 'translations' => [
                     'required',
                     'array',
@@ -459,6 +519,20 @@ class SliderRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            // В пределах одного слайдера допускается один главный слайд.
+            $slides = $this->input('slides');
+            if (is_array($slides)) {
+                $mainCount = 0;
+                foreach ($slides as $slide) {
+                    if (is_array($slide) && ($slide['is_main'] ?? false) === true) {
+                        $mainCount++;
+                    }
+                }
+                if ($mainCount > 1) {
+                    $validator->errors()->add('slides', 'Главным может быть только один слайд.');
+                }
+            }
+
             $translations = $this->input('translations');
 
             if (! is_array($translations)) {
@@ -576,6 +650,18 @@ class SliderRequest extends FormRequest
             /* Дополнительные настройки */
             'settings.array' => 'Дополнительные настройки должны быть массивом.',
 
+            /* Размещения слайдов */
+            'slides.array' => 'Список слайдов должен быть массивом.',
+            'slides.*.array' => 'Неверный формат размещения слайда.',
+            'slides.*.id.required' => 'Выберите слайд.',
+            'slides.*.id.integer' => 'Идентификатор слайда должен быть целым числом.',
+            'slides.*.id.distinct' => 'Один и тот же слайд нельзя добавить дважды.',
+            'slides.*.id.exists' => 'Выбранный слайд не найден.',
+            'slides.*.sort.integer' => 'Порядок размещения должен быть целым числом.',
+            'slides.*.sort.min' => 'Порядок размещения не может быть отрицательным.',
+            'slides.*.activity.boolean' => 'Некорректное значение активности размещения.',
+            'slides.*.is_main.boolean' => 'Некорректное значение главного слайда.',
+
             /* Переводы */
             'translations.required' => 'Необходимо добавить хотя бы один перевод.',
             'translations.array' => 'Переводы должны быть массивом.',
@@ -644,3 +730,4 @@ class SliderRequest extends FormRequest
         return $this->normalizeNullableString($value);
     }
 }
+

@@ -179,6 +179,11 @@ Route::put('/update-count/sliders',
     [SettingController::class, 'updateAdminCountSliders'])
     ->name('updateAdminCountSliders');
 
+// преимущества слайдов
+Route::put('/update-count/slider-slide-advantages',
+    [SettingController::class, 'updateAdminCountSliderSlideAdvantages'])
+    ->name('updateAdminCountSliderSlideAdvantages');
+
 // маркет
 Route::put('/update-count/market-companies',
     [SettingController::class, 'updateAdminCountMarketCompanies'])

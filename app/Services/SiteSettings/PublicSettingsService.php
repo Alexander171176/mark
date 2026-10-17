@@ -3,13 +3,20 @@
 namespace App\Services\SiteSettings;
 
 use App\Models\Admin\System\Setting\Setting;
+use Illuminate\Support\Facades\Schema;
 
 class PublicSettingsService
 {
-    private array $settings;
+    private array $settings = [];
 
     public function __construct()
     {
+        // Таблица может отсутствовать при первом запуске
+        // приложения или после отката миграций.
+        if (!Schema::hasTable('settings')) {
+            return;
+        }
+
         $this->settings = Setting::query()
             ->where('category', 'public')
             ->pluck('value', 'option')

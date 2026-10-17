@@ -13,8 +13,7 @@ class SliderSlideActionRequest extends FormRequest
      * Авторизация.
      *
      * Доступ к CRUD контролируется middleware / Policy.
-     * Если используются права на уровне владельца,
-     * их необходимо дополнительно проверять.
+     * Самостоятельная кнопка не привязана к одному слайду.
      */
     public function authorize(): bool
     {
@@ -48,21 +47,21 @@ class SliderSlideActionRequest extends FormRequest
             }
         }
 
-        /* =====================================================
-         | ЧИСЛОВЫЕ ПОЛЯ
-         ===================================================== */
-
-        foreach ([
-                     'slider_slide_id',
-                     'sort',
-                 ] as $field) {
-            if ($this->exists($field)) {
-                $value = $this->input($field);
-
-                $prepared[$field] = $value === ''
-                    ? null
-                    : $value;
+        // Глобальные поля сортировки и модерации (не pivot.sort).
+        foreach (['sort', 'moderation_status', 'moderated_by'] as $field) {
+            if ($this->exists($field) && $this->input($field) === '') {
+                $prepared[$field] = null;
             }
+        }
+
+        if ($this->exists('moderated_at') && $this->input('moderated_at') === '') {
+            $prepared['moderated_at'] = null;
+        }
+
+        if ($this->exists('moderation_note')) {
+            $prepared['moderation_note'] = $this->normalizeNullableString(
+                $this->input('moderation_note')
+            );
         }
 
         /* =====================================================
@@ -71,7 +70,6 @@ class SliderSlideActionRequest extends FormRequest
 
         foreach ([
                      'activity',
-                     'is_primary',
                  ] as $field) {
             if (! $this->exists($field)) {
                 continue;
@@ -110,7 +108,7 @@ class SliderSlideActionRequest extends FormRequest
                         continue;
                     }
 
-                    $preparedTranslations[$locale] = [
+                    $preparedTranslations[$locale] = array_replace($translation, [
                         'label' => $this->normalizeNullableString(
                             Arr::get($translation, 'label')
                         ),
@@ -122,7 +120,7 @@ class SliderSlideActionRequest extends FormRequest
                         'aria_label' => $this->normalizeNullableString(
                             Arr::get($translation, 'aria_label')
                         ),
-                    ];
+                    ]);
                 }
 
                 $prepared['translations'] = $preparedTranslations;
@@ -134,6 +132,9 @@ class SliderSlideActionRequest extends FormRequest
 
     /**
      * Правила валидации для создания и обновления.
+     *
+     * Поля pivot (slider_slide_id, sort, is_primary)
+     * здесь не валидируются: они принадлежат конструктору слайда.
      *
      * Формат переводов:
      *
@@ -147,32 +148,16 @@ class SliderSlideActionRequest extends FormRequest
     {
         return [
             /* =================================================
-             | РОДИТЕЛЬСКИЙ СЛАЙД
+             | ГЛОБАЛЬНАЯ АКТИВНОСТЬ КНОПКИ
              ================================================= */
 
-            'slider_slide_id' => [
-                'required',
-                'integer',
-                Rule::exists('slider_slides', 'id'),
-            ],
-
-            /* =================================================
-             | УПРАВЛЕНИЕ ОТОБРАЖЕНИЕМ
-             ================================================= */
-
-            'sort' => [
-                'required',
-                'integer',
-                'min:0',
-                'max:4294967295',
-            ],
+            'sort' => ['required', 'integer', 'min:0', 'max:4294967295'],
+            'moderation_status' => ['sometimes', 'integer', Rule::in([0, 1, 2])],
+            'moderated_by' => ['nullable', 'integer', Rule::exists('users', 'id')],
+            'moderated_at' => ['nullable', 'date'],
+            'moderation_note' => ['nullable', 'string'],
 
             'activity' => [
-                'required',
-                'boolean',
-            ],
-
-            'is_primary' => [
                 'required',
                 'boolean',
             ],
@@ -285,7 +270,7 @@ class SliderSlideActionRequest extends FormRequest
 
             'translations.*' => [
                 'required',
-                'array',
+                'array:label,title,aria_label',
             ],
 
             'translations.*.label' => [
@@ -322,18 +307,13 @@ class SliderSlideActionRequest extends FormRequest
 
             if (is_array($translations)) {
                 $availableLocales = $this->availableLocales();
-
                 $hasLabel = false;
 
                 foreach ($translations as $locale => $translation) {
-                    if (! in_array(
-                        (string) $locale,
-                        $availableLocales,
-                        true
-                    )) {
+                    if (! in_array((string) $locale, $availableLocales, true)) {
                         $validator->errors()->add(
                             "translations.{$locale}",
-                            'Указан неподдерживаемый язык перевода.'
+                            'Указанный язык не поддерживается приложением.'
                         );
 
                         continue;
@@ -347,7 +327,8 @@ class SliderSlideActionRequest extends FormRequest
                     $title = $translation['title'] ?? null;
                     $ariaLabel = $translation['aria_label'] ?? null;
 
-                    // Полностью пустой перевод пропускаем.
+                    // Полностью пустой перевод допускаем в форме.
+                    // Сервис не должен сохранять его в БД (label NOT NULL).
                     if (
                         blank($label)
                         && blank($title)
@@ -382,38 +363,36 @@ class SliderSlideActionRequest extends FormRequest
             $actionType = $this->input('action_type');
             $actionValue = $this->input('action_value');
 
-            if (! is_string($actionValue) || $actionValue === '') {
-                return;
-            }
+            if (is_string($actionValue) && $actionValue !== '') {
+                switch ($actionType) {
+                    case 'url':
+                        $this->validateUrlAction(
+                            $validator,
+                            $actionValue
+                        );
+                        break;
 
-            switch ($actionType) {
-                case 'url':
-                    $this->validateUrlAction(
-                        $validator,
-                        $actionValue
-                    );
-                    break;
+                    case 'route':
+                        $this->validateRouteAction(
+                            $validator,
+                            $actionValue
+                        );
+                        break;
 
-                case 'route':
-                    $this->validateRouteAction(
-                        $validator,
-                        $actionValue
-                    );
-                    break;
+                    case 'form':
+                        $this->validateFormAction(
+                            $validator,
+                            $actionValue
+                        );
+                        break;
 
-                case 'form':
-                    $this->validateFormAction(
-                        $validator,
-                        $actionValue
-                    );
-                    break;
-
-                case 'anchor':
-                    $this->validateAnchorAction(
-                        $validator,
-                        $actionValue
-                    );
-                    break;
+                    case 'anchor':
+                        $this->validateAnchorAction(
+                            $validator,
+                            $actionValue
+                        );
+                        break;
+                }
             }
 
             /* =================================================
@@ -530,24 +509,21 @@ class SliderSlideActionRequest extends FormRequest
     }
 
     /**
-     * Список поддерживаемых языков.
+     * Языки из единого конфигурационного списка приложения.
+     * При добавлении словаря достаточно обновить config/app.php.
+     * Fallback для отображения переводов обрабатывается ресурсами,
+     * а не FormRequest.
      *
-     * Если в проекте используется другой конфиг,
-     * достаточно изменить этот метод.
+     * @return array<int, string>
      */
     protected function availableLocales(): array
     {
-        $locales = config(
-            'app.available_locales',
-            ['ru', 'kk', 'en']
-        );
+        $locales = config('app.available_locales', []);
 
-        return array_values(array_unique(
-            array_filter(
-                (array) $locales,
-                'is_string'
-            )
-        ));
+        return array_values(array_unique(array_filter(
+            is_array($locales) ? $locales : [],
+            fn (mixed $locale): bool => is_string($locale) && $locale !== ''
+        )));
     }
 
     /**
@@ -556,37 +532,22 @@ class SliderSlideActionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            /* Родительский слайд */
-            'slider_slide_id.required' =>
-                'Необходимо выбрать слайд.',
-
-            'slider_slide_id.integer' =>
-                'Некорректный идентификатор слайда.',
-
-            'slider_slide_id.exists' =>
-                'Указанный слайд не найден.',
-
-            /* Отображение */
-            'sort.required' =>
-                'Необходимо указать порядок сортировки.',
-
-            'sort.integer' =>
-                'Порядок сортировки должен быть целым числом.',
-
-            'sort.min' =>
-                'Порядок сортировки не может быть отрицательным.',
+            'sort.required' => 'Необходимо указать порядок сортировки.',
+            'sort.integer' => 'Порядок сортировки должен быть целым числом.',
+            'sort.min' => 'Порядок сортировки не может быть отрицательным.',
+            'sort.max' => 'Порядок сортировки превышает допустимое значение.',
+            'moderation_status.integer' => 'Статус модерации должен быть целым числом.',
+            'moderation_status.in' => 'Недопустимый статус модерации.',
+            'moderated_by.integer' => 'Идентификатор модератора должен быть целым числом.',
+            'moderated_by.exists' => 'Указанный модератор не найден.',
+            'moderated_at.date' => 'Дата модерации имеет неверный формат.',
+            'moderation_note.string' => 'Комментарий модератора должен быть текстом.',
 
             'activity.required' =>
                 'Необходимо указать активность кнопки.',
 
             'activity.boolean' =>
                 'Некорректное значение активности кнопки.',
-
-            'is_primary.required' =>
-                'Необходимо указать тип оформления кнопки.',
-
-            'is_primary.boolean' =>
-                'Некорректное значение основной кнопки.',
 
             /* Действие */
             'action_type.required' =>

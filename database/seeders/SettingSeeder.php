@@ -3276,6 +3276,39 @@ class SettingSeeder extends Seeder
                 'activity' => true,
                 'sort' => 0,
             ], // ADMIN SLIDERS DEFAULT VIEW
+            // ============================================================
+            // SLIDER SLIDE ADVANTAGES — преимущества слайдов
+            // ============================================================
+            [
+                'type' => 'string',
+                'option' => 'adminSliderSlideAdvantagesProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_SLIDER_SLIDE_ADVANTAGES_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных преимуществ слайдов: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN SLIDER SLIDE ADVANTAGES PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminSliderSlideAdvantagesPerPage',
+                'value' => '4',
+                'constant' => 'ADMIN_SLIDER_SLIDE_ADVANTAGES_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Количество преимуществ слайдов на странице в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN SLIDER SLIDE ADVANTAGES PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminSliderSlideAdvantagesDefaultSort',
+                'value' => 'idDesc',
+                'constant' => 'ADMIN_SLIDER_SLIDE_ADVANTAGES_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка преимуществ слайдов по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN SLIDER SLIDE ADVANTAGES DEFAULT SORT
 
             // Добавьте остальные параметры
         ];
